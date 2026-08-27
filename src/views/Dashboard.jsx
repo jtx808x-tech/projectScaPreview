@@ -1,16 +1,28 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid,
 } from "recharts";
 import { FileStack, Droplets, Activity, Wallet, ArrowRight } from "lucide-react";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { formatRupiah, formatNumber, formatDateID, TRX_LABEL } from "@/lib/format";
 import StatCard from "@/components/StatCard";
+import PageContainer from "@/components/layout/PageContainer";
+import ChartBox from "@/components/ChartBox";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent,
+} from "@/components/ui/chart";
+
+const TREND_CONFIG = {
+  paper_masuk: { label: "Kertas Masuk", color: "hsl(var(--chart-1))" },
+  paper_keluar: { label: "Kertas Keluar", color: "hsl(var(--chart-2))" },
+  ink_masuk: { label: "Tinta Masuk", color: "hsl(var(--chart-3))" },
+  ink_keluar: { label: "Tinta Keluar", color: "hsl(var(--chart-4))" },
+};
 
 const trxBadge = (t) => {
   const map = { masuk: "bg-emerald-500/15 text-emerald-600", keluar: "bg-rose-500/15 text-rose-500", retur: "bg-amber-500/15 text-amber-600" };
@@ -25,20 +37,16 @@ export default function Dashboard() {
     api.get("/dashboard").then((r) => setData(r.data)).catch(() => {});
   }, []);
 
-  if (!data) return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-28 w-full" />)}
-    </div>
-  );
+  if (!data) return <PageContainer isLoading testid="stok-dashboard-loading" />;
 
   const isSuper = user?.role === "superadmin";
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-3xl font-extrabold tracking-tight">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">Ringkasan stok & aktivitas mutasi tahun {data.year}.</p>
-      </div>
+    <PageContainer
+      testid="stok-dashboard-page"
+      pageTitle="Dashboard"
+      pageDescription={`Ringkasan stok & aktivitas mutasi tahun ${data.year}.`}
+    >
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard testid="card-total-paper" icon={FileStack} accent="primary" label="Total Stok Kertas"
@@ -60,21 +68,41 @@ export default function Dashboard() {
         <Card className="p-5 lg:col-span-2">
           <h3 className="font-display text-lg font-bold">Tren Mutasi (6 Bulan Terakhir)</h3>
           <p className="mb-4 text-xs text-muted-foreground">Perbandingan jumlah Masuk vs Keluar.</p>
-          <div className="h-64" data-testid="dashboard-trend-chart">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data.trend} margin={{ left: -20, right: 8, top: 4 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="label" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-                <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-                <Tooltip contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Line type="monotone" dataKey="paper_masuk" name="Kertas Masuk" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="paper_keluar" name="Kertas Keluar" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="ink_masuk" name="Tinta Masuk" stroke="hsl(var(--chart-3))" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="ink_keluar" name="Tinta Keluar" stroke="hsl(var(--chart-4))" strokeWidth={2} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          <ChartBox className="h-64" data-testid="dashboard-trend-chart">
+            <ChartContainer config={TREND_CONFIG}>
+              <AreaChart data={data.trend} margin={{ left: -20, right: 8, top: 4 }}>
+                <defs>
+                  {Object.keys(TREND_CONFIG).map((k) => (
+                    <linearGradient key={k} id={`fill-${k}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={`var(--color-${k})`} stopOpacity={0.35} />
+                      <stop offset="95%" stopColor={`var(--color-${k})`} stopOpacity={0.02} />
+                    </linearGradient>
+                  ))}
+                </defs>
+                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} tick={{ fontSize: 12 }} />
+                <YAxis tickLine={false} axisLine={false} tickMargin={4} tick={{ fontSize: 12 }} />
+                <ChartTooltip
+                  cursor={{ strokeDasharray: "4 4", stroke: "hsl(var(--muted-foreground))", strokeOpacity: 0.5 }}
+                  content={<ChartTooltipContent formatter={(v) => formatNumber(v)} />}
+                />
+                <ChartLegend content={<ChartLegendContent />} />
+                {Object.keys(TREND_CONFIG).map((k) => (
+                  <Area
+                    key={k}
+                    type="monotone"
+                    dataKey={k}
+                    name={TREND_CONFIG[k].label}
+                    stroke={`var(--color-${k})`}
+                    strokeWidth={2}
+                    fill={`url(#fill-${k})`}
+                    dot={false}
+                    activeDot={{ r: 3.5, strokeWidth: 2 }}
+                  />
+                ))}
+              </AreaChart>
+            </ChartContainer>
+          </ChartBox>
         </Card>
 
         <Card className="p-5">
@@ -104,6 +132,6 @@ export default function Dashboard() {
           </Link>
         </Card>
       </div>
-    </div>
+    </PageContainer>
   );
 }

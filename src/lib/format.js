@@ -82,5 +82,7 @@ export const ID_MONTHS = [
   "Juli", "Agustus", "September", "Oktober", "November", "Desember",
 ];
 
-export const TRX_LABEL = { IN: "Masuk", OUT: "Keluar", ADJUST: "Penyesuaian" };
+// Label jenis transaksi. Kunci HARUS sama dengan nilai yang dipakai backend
+// (lihat src/server/format.js): masuk | keluar | retur.
+export const TRX_LABEL = { masuk: "Masuk", keluar: "Keluar", retur: "Retur/Sisa" };
 

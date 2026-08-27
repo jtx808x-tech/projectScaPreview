@@ -7,10 +7,20 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['var(--font-geist-sans)', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+        mono: ['var(--font-geist-mono)', 'ui-monospace', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+        display: ['var(--font-geist-sans)', '-apple-system', 'BlinkMacSystemFont', 'sans-serif']
+      },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)'
+      },
+      boxShadow: {
+        soft: '0 1px 2px 0 rgb(0 0 0 / 0.04), 0 1px 3px 0 rgb(0 0 0 / 0.06)',
+        lift: '0 4px 12px -2px rgb(0 0 0 / 0.08), 0 2px 6px -2px rgb(0 0 0 / 0.05)',
+        glow: '0 0 0 1px hsl(var(--primary) / 0.12), 0 6px 20px -6px hsl(var(--primary) / 0.35)'
       },
       colors: {
         background: 'hsl(var(--background))',
@@ -62,11 +72,15 @@ module.exports = {
         'accordion-up': {
           from: { height: 'var(--radix-accordion-content-height)' },
           to: { height: '0' }
+        },
+        shimmer: {
+          '100%': { transform: 'translateX(100%)' }
         }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
-        'accordion-up': 'accordion-up 0.2s ease-out'
+        'accordion-up': 'accordion-up 0.2s ease-out',
+        shimmer: 'shimmer 1.6s infinite'
       }
     }
   },

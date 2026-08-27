@@ -9,6 +9,9 @@ import { fmtDate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import PageContainer from "@/components/layout/PageContainer";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyContent } from "@/components/ui/empty";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -82,9 +85,11 @@ export default function PoList() {
   };
 
   return (
-    <div className="space-y-6" data-testid="po-list-page">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <h1 className="font-display text-3xl font-extrabold tracking-tight">{t("poList")}</h1>
+    <PageContainer
+      testid="po-list-page"
+      pageTitle={t("poList")}
+      pageDescription="Kelola PO, pantau progres produksi, dan jadwal pengiriman."
+      pageHeaderAction={(
         <div className="flex items-center gap-2">
           <Button data-testid="po-export-pdf" onClick={downloadPdf} variant="outline" className="rounded-full gap-2">
             <FileDown className="h-4 w-4" /> {t("exportPdf")}
@@ -93,7 +98,8 @@ export default function PoList() {
             <Plus className="h-4 w-4" /> {t("newPO")}
           </Button>
         </div>
-      </div>
+      )}
+    >
 
       <div className="flex gap-3 flex-col sm:flex-row">
         <div className="relative flex-1">
@@ -121,12 +127,36 @@ export default function PoList() {
       </div>
 
       {loading ? (
-        <div className="py-20 text-center text-muted-foreground">Memuat…</div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-testid="po-list-skeleton">
+          {[...Array(6)].map((_, i) => (
+            <Card key={i} className="flex flex-col gap-3 rounded-2xl p-5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1 space-y-2">
+                  <Skeleton className="h-5 w-2/3" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+                <Skeleton className="h-5 w-20 rounded-md" />
+              </div>
+              <div className="space-y-2 pt-1">
+                <Skeleton className="h-3.5 w-3/4" />
+                <Skeleton className="h-3.5 w-2/3" />
+              </div>
+              <Skeleton className="mt-auto h-9 w-full rounded-md" />
+            </Card>
+          ))}
+        </div>
       ) : pos.length === 0 ? (
-        <Card className="py-16 flex flex-col items-center gap-3 rounded-2xl">
-          <Package className="h-12 w-12 text-muted-foreground/40" />
-          <p className="text-muted-foreground">{t("noData")}</p>
-          <Button onClick={() => navigate("/po/pos/new")} className="rounded-full gap-2 mt-2"><Plus className="h-4 w-4" /> {t("newPO")}</Button>
+        <Card className="rounded-2xl py-16">
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon"><Package /></EmptyMedia>
+              <EmptyTitle>{t("noData")}</EmptyTitle>
+              <EmptyDescription>Buat PO pertama untuk mulai melacak progres produksi & pengiriman.</EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button onClick={() => navigate("/po/pos/new")} className="mt-1 gap-2 rounded-full"><Plus className="h-4 w-4" /> {t("newPO")}</Button>
+            </EmptyContent>
+          </Empty>
         </Card>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -175,6 +205,6 @@ export default function PoList() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </PageContainer>
   );
 }

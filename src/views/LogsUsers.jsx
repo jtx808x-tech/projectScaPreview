@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { UserPlus, Power, Trash2, KeyRound, ShieldCheck } from "lucide-react";
+import { UserPlus, Power, Trash2, KeyRound, ShieldCheck, Inbox } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { useAuth, apiError } from "@/context/AuthContext";
@@ -19,6 +19,8 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
+import PageContainer from "@/components/layout/PageContainer";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
 } from "@/components/ui/dialog";
@@ -73,11 +75,11 @@ function Inner() {
   };
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="font-display text-3xl font-extrabold tracking-tight">Log & Manajemen User</h1>
-        <p className="text-sm text-muted-foreground">Aktivitas login, audit mutasi, dan pengelolaan user.</p>
-      </div>
+    <PageContainer
+      testid="logs-users-page"
+      pageTitle="Log & Manajemen User"
+      pageDescription="Aktivitas login, audit mutasi, dan pengelolaan user."
+    >
 
       <Tabs defaultValue="activity">
         <TabsList className="flex-wrap">
@@ -102,7 +104,7 @@ function Inner() {
                     <TableCell className="whitespace-nowrap">{a.logout_time ? formatDateTimeID(a.logout_time) : <Badge variant="outline">Aktif</Badge>}</TableCell>
                     <TableCell>{a.logout_type || "-"}</TableCell>
                   </TableRow>
-                )) : <TableRow><TableCell colSpan={5} className="py-8 text-center text-muted-foreground">Belum ada log.</TableCell></TableRow>}
+                )) : <TableRow className="hover:bg-transparent"><TableCell colSpan={5} className="py-6"><Empty className="py-3"><EmptyHeader><EmptyMedia variant="icon"><Inbox /></EmptyMedia><EmptyTitle>Belum ada log aktivitas</EmptyTitle><EmptyDescription>Log tercatat otomatis saat ada aktivitas pengguna.</EmptyDescription></EmptyHeader></Empty></TableCell></TableRow>}
               </TableBody>
             </Table>
           </Card>
@@ -129,7 +131,7 @@ function Inner() {
                       </details>
                     </TableCell>
                   </TableRow>
-                )) : <TableRow><TableCell colSpan={5} className="py-8 text-center text-muted-foreground">Belum ada audit.</TableCell></TableRow>}
+                )) : <TableRow className="hover:bg-transparent"><TableCell colSpan={5} className="py-6"><Empty className="py-3"><EmptyHeader><EmptyMedia variant="icon"><Inbox /></EmptyMedia><EmptyTitle>Belum ada log audit</EmptyTitle><EmptyDescription>Log audit tercatat saat ada perubahan data.</EmptyDescription></EmptyHeader></Empty></TableCell></TableRow>}
               </TableBody>
             </Table>
           </Card>
@@ -223,7 +225,7 @@ function Inner() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </PageContainer>
   );
 }
 

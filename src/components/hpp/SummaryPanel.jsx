@@ -11,7 +11,7 @@ const RateRow = ({ label, pct, onPct, amount }) => (
             inputMode="decimal"
             value={pct ?? ""}
             onChange={(e) => onPct(e.target.value.replace(/[^\d.,]/g, ""))}
-            className="w-full h-9 rounded-md border border-border bg-background pl-2.5 pr-6 text-right font-mono text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/25"
+            className="h-9 w-full rounded-md border border-border bg-background pl-2.5 pr-6 text-right font-mono text-sm tabular-nums shadow-soft outline-none transition-[border-color,box-shadow] duration-200 hover:border-primary/40 focus:border-primary focus:ring-2 focus:ring-primary/25"
           />
           <span className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
         </div>
@@ -23,8 +23,8 @@ const RateRow = ({ label, pct, onPct, amount }) => (
 
 export default function SummaryPanel({ res, rates, onRate, onSelect, enabled, onToggle }) {
   return (
-    <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden" data-testid="summary-panel">
-      <div className="bg-primary px-5 py-4">
+    <div className="overflow-hidden rounded-xl border border-border/70 bg-card shadow-lift" data-testid="summary-panel">
+      <div className="bg-gradient-to-br from-primary to-primary/80 px-5 py-4">
         <p className="text-xs font-semibold uppercase tracking-[0.08em] text-primary-foreground/80">Total HPP — Harga Jual / Pcs</p>
         <p className="font-mono text-3xl font-semibold text-primary-foreground mt-1" data-testid="summary-final">{formatRp(res.final)}</p>
       </div>

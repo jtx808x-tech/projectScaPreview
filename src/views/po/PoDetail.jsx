@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -33,7 +34,17 @@ export default function PoDetail() {
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [id]);
 
-  if (!po) return <div className="py-20 text-center text-muted-foreground">Memuat…</div>;
+  if (!po) return (
+    <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
+      <div className="space-y-2">
+        {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
+      </div>
+      <div className="space-y-4">
+        <Skeleton className="h-28 w-full rounded-xl" />
+        <Skeleton className="h-64 w-full rounded-xl" />
+      </div>
+    </div>
+  );
 
   const sd = po.stage_data || {};
   const data = sd[String(active)] || {};

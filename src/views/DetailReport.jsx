@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, LineChart, Line,
-  XAxis, YAxis, Tooltip, CartesianGrid, Legend,
+  PieChart, Pie, Cell, BarChart, Bar, AreaChart, Area,
+  XAxis, YAxis, CartesianGrid, Label as RLabel,
 } from "recharts";
 import { FileDown, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { toast } from "sonner";
@@ -11,6 +11,9 @@ import { formatRupiah, formatDateID } from "@/lib/format";
 import SectionGate from "@/components/SectionGate";
 import PeriodFilter from "@/components/PeriodFilter";
 import StatCard from "@/components/StatCard";
+import ChartBox from "@/components/ChartBox";
+import PageContainer from "@/components/layout/PageContainer";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,8 +25,41 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent,
+} from "@/components/ui/chart";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
 
 const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"];
+
+/** Gabungkan entri dengan nama sama supaya legend & key chart tetap unik. */
+function mergeByName(list = []) {
+  const map = new Map();
+  list.forEach((it) => {
+    const key = it.name || "Lainnya";
+    map.set(key, (map.get(key) || 0) + (it.value || 0));
+  });
+  return [...map.entries()].map(([name, value]) => ({ name, value }));
+}
+
+const TREND_CONFIG = {
+  paper_masuk: { label: "Kertas Masuk", color: "hsl(var(--chart-1))" },
+  paper_keluar: { label: "Kertas Keluar", color: "hsl(var(--chart-2))" },
+  ink_masuk: { label: "Tinta Masuk", color: "hsl(var(--chart-3))" },
+  ink_keluar: { label: "Tinta Keluar", color: "hsl(var(--chart-4))" },
+};
+
+const VALUE_CONFIG = {
+  paper: { label: "Kertas", color: "hsl(var(--chart-1))" },
+  ink: { label: "Tinta", color: "hsl(var(--chart-2))" },
+  other: { label: "Lain", color: "hsl(var(--chart-4))" },
+};
+
+const PPN_CONFIG = {
+  paper: { label: "Kertas", color: "hsl(var(--chart-1))" },
+  ink: { label: "Tinta", color: "hsl(var(--chart-4))" },
+  other: { label: "Lain", color: "hsl(var(--chart-5))" },
+};
 
 function DiffBadge({ diff, pct }) {
   const up = diff > 0, down = diff < 0;
@@ -72,12 +108,11 @@ function Inner() {
   const cmp = data?.comparison;
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display text-3xl font-extrabold tracking-tight">Laporan Detail</h1>
-          <p className="text-sm text-muted-foreground">Nominal, grafik, perbandingan periode & PPN. {period.label}</p>
-        </div>
+    <PageContainer
+      testid="detail-report-page"
+      pageTitle="Laporan Detail"
+      pageDescription={`Nominal, grafik, perbandingan periode & PPN. ${period.label}`}
+      pageHeaderAction={(
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" className="gap-2" data-testid="pdf-stock-nominal-button" onClick={() => openPdf("nominal")}>
             <FileDown className="h-4 w-4" /> Stok Keseluruhan
@@ -86,11 +121,22 @@ function Inner() {
             <FileDown className="h-4 w-4" /> PDF Detail
           </Button>
         </div>
-      </div>
+      )}
+    >
 
       <Card className="p-4"><PeriodFilter onChange={setPeriod} /></Card>
 
-      {!data ? <p className="text-muted-foreground">Memuat…</p> : (
+      {!data ? (
+        <div className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
+          </div>
+          <Skeleton className="h-40 w-full rounded-xl" />
+          <div className="grid gap-4 lg:grid-cols-3">
+            {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-72 w-full rounded-xl" />)}
+          </div>
+        </div>
+      ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard testid="detail-nominal-paper" icon={FileStack} accent="primary" label="Nominal Stok Kertas" value={formatRupiah(data.nominal_paper)} />
@@ -136,61 +182,113 @@ function Inner() {
 
           {/* Composition pies */}
           <div className="grid gap-4 lg:grid-cols-3">
-            {[["Komposisi Nominal Kertas", data.paper_composition], ["Komposisi Nominal Tinta", data.ink_composition], ["Komposisi Nominal Lain", data.other_composition || []]].map(([title, comp]) => (
+            {[["Komposisi Nominal Kertas", data.paper_composition], ["Komposisi Nominal Tinta", data.ink_composition], ["Komposisi Nominal Lain", data.other_composition || []]].map(([title, rawComp]) => {
+              const comp = mergeByName(rawComp);
+              return (
               <Card key={title} className="p-5">
                 <h3 className="mb-2 font-display text-lg font-bold">{title}</h3>
-                <div className="h-64">
+                <ChartBox className="h-64">
                   {comp.length ? (
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ChartContainer
+                      config={Object.fromEntries(comp.map((c, i) => [c.name, { label: c.name, color: COLORS[i % COLORS.length] }]))}
+                    >
                       <PieChart>
-                        <Pie data={comp} dataKey="value" nameKey="name" outerRadius={90} label={(e) => e.name}>
-                          {comp.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                        <ChartTooltip
+                          content={<ChartTooltipContent hideLabel formatter={(v) => formatRupiah(v)} />}
+                        />
+                        <Pie
+                          data={comp}
+                          dataKey="value"
+                          nameKey="name"
+                          innerRadius={54}
+                          outerRadius={84}
+                          paddingAngle={2}
+                          strokeWidth={2}
+                          stroke="hsl(var(--card))"
+                        >
+                          {comp.map((c, i) => <Cell key={c.name} fill={COLORS[i % COLORS.length]} />)}
+                          <RLabel
+                            content={({ viewBox }) => {
+                              if (!viewBox || !("cx" in viewBox)) return null;
+                              const total = comp.reduce((a, b) => a + (b.value || 0), 0);
+                              return (
+                                <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
+                                  <tspan x={viewBox.cx} y={viewBox.cy - 8} className="fill-muted-foreground text-[10px] uppercase tracking-[0.15em]">Total</tspan>
+                                  <tspan x={viewBox.cx} y={viewBox.cy + 12} className="fill-foreground font-mono text-sm font-bold">{formatRupiah(total)}</tspan>
+                                </text>
+                              );
+                            }}
+                          />
                         </Pie>
-                        <Tooltip formatter={(v) => formatRupiah(v)} contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                        <ChartLegend content={<ChartLegendContent />} />
                       </PieChart>
-                    </ResponsiveContainer>
-                  ) : <div className="grid h-full place-items-center text-sm text-muted-foreground">Belum ada data nominal.</div>}
-                </div>
+                    </ChartContainer>
+                  ) : (
+                    <Empty className="h-full py-0">
+                      <EmptyHeader>
+                        <EmptyMedia variant="icon"><Wallet /></EmptyMedia>
+                        <EmptyTitle>Belum ada data nominal</EmptyTitle>
+                        <EmptyDescription>Nominal muncul setelah ada mutasi masuk pada periode ini.</EmptyDescription>
+                      </EmptyHeader>
+                    </Empty>
+                  )}
+                </ChartBox>
               </Card>
-            ))}
+              );
+            })}
           </div>
 
           {/* Monthly trend + value */}
           <div className="grid gap-4 lg:grid-cols-2">
             <Card className="p-5">
               <h3 className="mb-4 font-display text-lg font-bold">Tren Mutasi per Bulan</h3>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={data.monthly_trend} margin={{ left: -20, right: 8 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="label" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-                    <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-                    <Tooltip contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                    <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <Line dataKey="paper_masuk" name="Kertas Masuk" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} />
-                    <Line dataKey="paper_keluar" name="Kertas Keluar" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={false} />
-                    <Line dataKey="ink_masuk" name="Tinta Masuk" stroke="hsl(var(--chart-3))" strokeWidth={2} dot={false} />
-                    <Line dataKey="ink_keluar" name="Tinta Keluar" stroke="hsl(var(--chart-4))" strokeWidth={2} dot={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
+              <ChartBox className="h-64">
+                <ChartContainer config={TREND_CONFIG}>
+                  <AreaChart data={data.monthly_trend} margin={{ left: -20, right: 8, top: 4 }}>
+                    <defs>
+                      {Object.keys(TREND_CONFIG).map((k) => (
+                        <linearGradient key={k} id={`dfill-${k}`} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={`var(--color-${k})`} stopOpacity={0.32} />
+                          <stop offset="95%" stopColor={`var(--color-${k})`} stopOpacity={0.02} />
+                        </linearGradient>
+                      ))}
+                    </defs>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} tick={{ fontSize: 12 }} />
+                    <YAxis tickLine={false} axisLine={false} tickMargin={4} tick={{ fontSize: 12 }} />
+                    <ChartTooltip
+                      cursor={{ strokeDasharray: "4 4", stroke: "hsl(var(--muted-foreground))", strokeOpacity: 0.5 }}
+                      content={<ChartTooltipContent />}
+                    />
+                    <ChartLegend content={<ChartLegendContent />} />
+                    {Object.keys(TREND_CONFIG).map((k) => (
+                      <Area key={k} type="monotone" dataKey={k} name={TREND_CONFIG[k].label}
+                        stroke={`var(--color-${k})`} strokeWidth={2} fill={`url(#dfill-${k})`}
+                        dot={false} activeDot={{ r: 3.5, strokeWidth: 2 }} />
+                    ))}
+                  </AreaChart>
+                </ChartContainer>
+              </ChartBox>
             </Card>
             <Card className="p-5">
               <h3 className="mb-4 font-display text-lg font-bold">Nilai Total Stok per Bulan (Rp)</h3>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={data.monthly_value} margin={{ left: 0, right: 8 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="label" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-                    <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => (v / 1e6).toFixed(0) + "jt"} />
-                    <Tooltip formatter={(v) => formatRupiah(v)} contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                    <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <Bar dataKey="paper" name="Kertas" stackId="a" fill="hsl(var(--chart-1))" />
-                    <Bar dataKey="ink" name="Tinta" stackId="a" fill="hsl(var(--chart-2))" />
-                    <Bar dataKey="other" name="Lain" stackId="a" fill="hsl(var(--chart-4))" />
+              <ChartBox className="h-64">
+                <ChartContainer config={VALUE_CONFIG}>
+                  <BarChart data={data.monthly_value} margin={{ left: 0, right: 8, top: 4 }}>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} tick={{ fontSize: 12 }} />
+                    <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 10 }} tickFormatter={(v) => (v / 1e6).toFixed(0) + "jt"} />
+                    <ChartTooltip
+                      cursor={{ fill: "hsl(var(--muted))", fillOpacity: 0.45 }}
+                      content={<ChartTooltipContent formatter={(v) => formatRupiah(v)} />}
+                    />
+                    <ChartLegend content={<ChartLegendContent />} />
+                    <Bar dataKey="paper" name="Kertas" stackId="a" fill="var(--color-paper)" />
+                    <Bar dataKey="ink" name="Tinta" stackId="a" fill="var(--color-ink)" />
+                    <Bar dataKey="other" name="Lain" stackId="a" fill="var(--color-other)" radius={[6, 6, 0, 0]} />
                   </BarChart>
-                </ResponsiveContainer>
-              </div>
+                </ChartContainer>
+              </ChartBox>
             </Card>
           </div>
 
@@ -220,20 +318,23 @@ function Inner() {
                   </TableBody>
                 </Table>
               </div>
-              <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={data.ppn_monthly.map((p) => ({ ...p, label: p.label.slice(0, 3) }))} margin={{ left: 0, right: 8 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                    <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => (v / 1e6).toFixed(0) + "jt"} />
-                    <Tooltip formatter={(v) => formatRupiah(v)} contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                    <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <Bar dataKey="paper" name="Kertas" fill="hsl(var(--chart-1))" />
-                    <Bar dataKey="ink" name="Tinta" fill="hsl(var(--chart-4))" />
-                    <Bar dataKey="other" name="Lain" fill="hsl(var(--chart-5))" />
+              <ChartBox className="h-72">
+                <ChartContainer config={PPN_CONFIG}>
+                  <BarChart data={data.ppn_monthly.map((p) => ({ ...p, label: p.label.slice(0, 3) }))} margin={{ left: 0, right: 8, top: 4 }}>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} tick={{ fontSize: 11 }} />
+                    <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 10 }} tickFormatter={(v) => (v / 1e6).toFixed(0) + "jt"} />
+                    <ChartTooltip
+                      cursor={{ fill: "hsl(var(--muted))", fillOpacity: 0.45 }}
+                      content={<ChartTooltipContent formatter={(v) => formatRupiah(v)} />}
+                    />
+                    <ChartLegend content={<ChartLegendContent />} />
+                    <Bar dataKey="paper" name="Kertas" fill="var(--color-paper)" radius={[5, 5, 0, 0]} />
+                    <Bar dataKey="ink" name="Tinta" fill="var(--color-ink)" radius={[5, 5, 0, 0]} />
+                    <Bar dataKey="other" name="Lain" fill="var(--color-other)" radius={[5, 5, 0, 0]} />
                   </BarChart>
-                </ResponsiveContainer>
-              </div>
+                </ChartContainer>
+              </ChartBox>
             </div>
           </Card>
         </>
@@ -254,7 +355,7 @@ function Inner() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageContainer>
   );
 }
 

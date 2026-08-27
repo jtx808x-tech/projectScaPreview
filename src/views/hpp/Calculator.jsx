@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Save, FileDown, RotateCcw, FolderOpen, Trash2, X, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { defaultState, emptyState } from "@/lib/hppDefaults";
+import { Heading } from "@/components/ui/heading";
 import { calcAll } from "@/lib/hppCalc";
 import { formatRp } from "@/lib/format";
 import { MODULES, SUMMARY_ICON } from "@/components/hpp/modules";
@@ -91,24 +92,23 @@ export default function HppCalculator() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="font-display text-3xl font-extrabold tracking-tight">Kalkulator HPP</h1>
-          <p className="text-sm text-muted-foreground">Percetakan SCA — 14 modul biaya, live reactive.</p>
+          <Heading title="Kalkulator HPP" description="Percetakan SCA — 14 modul biaya, live reactive." />
         </div>
         <div className="flex items-center gap-2">
           <button data-testid="btn-new" onClick={newCalc} title="Baru"
-            className="hidden sm:inline-flex items-center gap-1.5 h-10 px-3 rounded-md border border-border bg-card text-muted-foreground text-sm font-medium hover:bg-secondary transition-colors">
+            className="hidden sm:inline-flex items-center gap-1.5 h-10 px-3 rounded-md border border-border bg-card text-muted-foreground text-sm font-medium shadow-soft transition-[background-color,border-color,box-shadow,transform] duration-200 ease-out hover:border-primary/30 hover:bg-secondary hover:text-foreground hover:shadow-lift active:scale-[0.985]">
             <RotateCcw className="h-4 w-4" /> Baru
           </button>
           <button data-testid="btn-open-saved" onClick={() => { loadSaved(); setDrawer(true); }}
-            className="inline-flex items-center gap-1.5 h-10 px-3 rounded-md border border-border bg-card text-muted-foreground text-sm font-medium hover:bg-secondary transition-colors">
+            className="inline-flex items-center gap-1.5 h-10 px-3 rounded-md border border-border bg-card text-muted-foreground text-sm font-medium shadow-soft transition-[background-color,border-color,box-shadow,transform] duration-200 ease-out hover:border-primary/30 hover:bg-secondary hover:text-foreground hover:shadow-lift active:scale-[0.985]">
             <FolderOpen className="h-4 w-4" /> <span className="hidden sm:inline">Tersimpan</span>
           </button>
           <button data-testid="btn-export-pdf" onClick={doExport}
-            className="inline-flex items-center gap-1.5 h-10 px-3 rounded-md border border-primary/40 bg-card text-primary text-sm font-medium hover:bg-primary/5 transition-colors">
+            className="inline-flex items-center gap-1.5 h-10 px-3 rounded-md border border-primary/40 bg-card text-primary text-sm font-medium shadow-soft transition-[background-color,border-color,box-shadow,transform] duration-200 ease-out hover:border-primary hover:bg-primary/5 hover:shadow-lift active:scale-[0.985]">
             <FileDown className="h-4 w-4" /> <span className="hidden sm:inline">PDF</span>
           </button>
           <button data-testid="btn-save" onClick={() => setSaveOpen(true)}
-            className="inline-flex items-center gap-1.5 h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
+            className="inline-flex items-center gap-1.5 h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium shadow-soft transition-[background-color,box-shadow,transform] duration-200 ease-out hover:bg-primary/90 hover:shadow-glow active:scale-[0.985]">
             <Save className="h-4 w-4" /> Simpan
           </button>
         </div>
@@ -151,7 +151,7 @@ export default function HppCalculator() {
               <motion.div key={active}
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.2 }}
-                className="rounded-xl border border-border bg-card shadow-sm p-5 md:p-8">
+                className="stagger-in rounded-xl border border-border/70 bg-card p-5 shadow-soft transition-shadow duration-200 ease-out hover:shadow-lift md:p-8">
                 {active === "summary" ? (
                   <>
                     <div className="mb-5">
