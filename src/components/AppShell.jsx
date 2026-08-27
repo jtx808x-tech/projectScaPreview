@@ -64,9 +64,13 @@ export default function AppShell() {
     { to: "/stok/lainnya", label: "Mutasi Lain", icon: Package, show: perms.canStokMutations },
     { to: "/stok/laporan-stok", label: "Laporan Stok", icon: ClipboardList, show: perms.canStokReport },
     { to: "/stok/laporan-detail", label: "Laporan Detail", icon: BarChart3, locked: true, show: perms.canStokDetail },
-    { to: "/stok/log-user", label: "Log & User", icon: Users, locked: true, show: perms.canStokLogs },
     { to: "/stok/tutup-tahun", label: "Tutup Tahun", icon: CalendarX, locked: true, show: perms.canStokYearClose },
   ].filter((m) => m.show);
+
+  // Ditempatkan terpisah di pojok kiri bawah sidebar (di atas kartu user).
+  const logUserItem = perms.canStokLogs
+    ? { to: "/stok/log-user", label: "Log & User", icon: Users, locked: true }
+    : null;
 
   const poMenu = [
     { to: "/po", label: "Dashboard PO", icon: LayoutDashboard, end: true },
@@ -117,7 +121,12 @@ export default function AppShell() {
           </>
         )}
       </nav>
-      <div className="border-t border-border p-3">
+      <div className="border-t border-border p-3 space-y-2">
+        {logUserItem && (
+          <div data-testid="sidebar-footer-nav">
+            <NavItem item={logUserItem} />
+          </div>
+        )}
         <NavUser
           user={user}
           isSuper={isSuper}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { UserPlus, Power, Trash2, KeyRound, ShieldCheck, Inbox } from "lucide-react";
+import { UserPlus, Power, Trash2, KeyRound, ShieldCheck, Inbox, UserCog } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { useAuth, apiError } from "@/context/AuthContext";
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/table";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
 import PageContainer from "@/components/layout/PageContainer";
+import UserEditDialog from "@/components/UserEditDialog";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
 } from "@/components/ui/dialog";
@@ -36,9 +37,11 @@ function Inner() {
   const [audit, setAudit] = useState([]);
   const [users, setUsers] = useState([]);
   const [regOpen, setRegOpen] = useState(false);
-  const [reg, setReg] = useState({ name: "", username: "", password: "", role: "admin" });
+  const [reg, setReg] = useState({ name: "", username: "", password: "", email: "", phone: "", role: "admin" });
   const [tempPwd, setTempPwd] = useState("");
   const [delUser, setDelUser] = useState(null);
+  // Kelola kredensial user (khusus Superadmin, boleh untuk akun sendiri)
+  const [editUser, setEditUser] = useState(null);
 
   const loadLogs = useCallback(() => {
     api.get("/logs/activity").then((r) => setActivity(r.data)).catch(() => {});
@@ -53,7 +56,7 @@ function Inner() {
     try {
       await api.post("/users", reg);
       toast.success("User berhasil didaftarkan.");
-      setRegOpen(false); setReg({ name: "", username: "", password: "", role: "admin" });
+      setRegOpen(false); setReg({ name: "", username: "", password: "", email: "", phone: "", role: "admin" });
       loadLogs();
     } catch (e) { toast.error(apiError(e)); }
   };
@@ -152,6 +155,8 @@ function Inner() {
                       <div className="space-y-1.5"><Label>Nama</Label><Input value={reg.name} data-testid="reg-name" onChange={(e) => setReg({ ...reg, name: e.target.value })} /></div>
                       <div className="space-y-1.5"><Label>Username</Label><Input value={reg.username} data-testid="reg-username" onChange={(e) => setReg({ ...reg, username: e.target.value })} /></div>
                       <div className="space-y-1.5"><Label>Password</Label><Input type="password" value={reg.password} data-testid="reg-password" onChange={(e) => setReg({ ...reg, password: e.target.value })} /></div>
+                      <div className="space-y-1.5"><Label>Email <span className="text-muted-foreground">(opsional)</span></Label><Input type="email" placeholder="nama@email.com" value={reg.email} data-testid="reg-email" onChange={(e) => setReg({ ...reg, email: e.target.value })} /></div>
+                      <div className="space-y-1.5"><Label>No. Telepon <span className="text-muted-foreground">(opsional)</span></Label><Input placeholder="08xxxxxxxxxx" value={reg.phone} data-testid="reg-phone" onChange={(e) => setReg({ ...reg, phone: e.target.value })} /></div>
                       <div className="space-y-1.5"><Label>Role</Label>
                         <Select value={reg.role} onValueChange={(v) => setReg({ ...reg, role: v })}>
                           <SelectTrigger data-testid="reg-role"><SelectValue /></SelectTrigger>
@@ -172,7 +177,7 @@ function Inner() {
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow><TableHead>Nama</TableHead><TableHead>Username</TableHead><TableHead>Role</TableHead>
+                    <TableRow><TableHead>Nama</TableHead><TableHead>Username</TableHead><TableHead>Email</TableHead><TableHead>Role</TableHead>
                       <TableHead>Status</TableHead><TableHead className="text-right">Aksi</TableHead></TableRow>
                   </TableHeader>
                   <TableBody data-testid="users-table">
@@ -180,10 +185,12 @@ function Inner() {
                       <TableRow key={u.id}>
                         <TableCell className="font-medium">{u.name}</TableCell>
                         <TableCell>{u.username}</TableCell>
+                        <TableCell className="text-muted-foreground">{u.email || "-"}</TableCell>
                         <TableCell>{u.role === "superadmin" ? <Badge className="gap-1"><ShieldCheck className="h-3 w-3" /> Superadmin</Badge> : <Badge variant="outline">Admin/PIC</Badge>}</TableCell>
                         <TableCell>{u.active !== false ? <Badge className="bg-emerald-500/15 text-emerald-600">Aktif</Badge> : <Badge variant="destructive">Nonaktif</Badge>}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
+                            <Button size="icon" variant="ghost" title="Kelola kredensial" data-testid={`changepwd-${u.id}`} onClick={() => setEditUser(u)}><UserCog className="h-4 w-4" /></Button>
                             <Button size="icon" variant="ghost" disabled={u.id === user.id} data-testid={`toggle-${u.id}`} onClick={() => toggleUser(u)}><Power className="h-4 w-4" /></Button>
                             <Button size="icon" variant="ghost" disabled={u.id === user.id} data-testid={`deluser-${u.id}`} onClick={() => setDelUser(u)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                           </div>
@@ -212,6 +219,13 @@ function Inner() {
           </TabsContent>
         )}
       </Tabs>
+
+      <UserEditDialog
+        user={editUser}
+        currentUserId={user?.id}
+        onOpenChange={(o) => !o && setEditUser(null)}
+        onSaved={loadLogs}
+      />
 
       <AlertDialog open={!!delUser} onOpenChange={(o) => !o && setDelUser(null)}>
         <AlertDialogContent>

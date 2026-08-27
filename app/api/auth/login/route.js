@@ -44,7 +44,7 @@ export const POST = handle(async (req) => {
   });
 
   const res = NextResponse.json({
-    id: user.id, name: user.name, username: user.username, role: user.role, token,
+    id: user.id, name: user.name, username: user.username, email: user.email || "", role: user.role, token,
   });
   return setAuthCookie(res, token);
 });

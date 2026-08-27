@@ -89,8 +89,6 @@ export function truncate(ctx, str, maxWidth, size = 8, bold = false) {
 
 export function docHeader(ctx, title, periodLabel) {
   const printed = new Date();
-  text(ctx, "LAPORAN STOK SCA - Laporan Stok Kertas & Tinta", { size: 8, color: C.sub });
-  ctx.y -= 15;
   text(ctx, title, { size: 16, bold: true, color: C.header });
   ctx.y -= 14;
   text(ctx, `Periode: ${periodLabel}`, { size: 8.5, color: C.sub });

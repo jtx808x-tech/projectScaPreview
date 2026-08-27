@@ -22,10 +22,15 @@ export const POST = handle(async (req) => {
   const username = String(body.username || "").trim();
   const password = String(body.password || "");
   const role = body.role;
+  const email = String(body.email || "").trim();
+  const phone = String(body.phone || "").trim();
 
   if (!name || !username) throw new HttpError(400, "Nama dan username wajib diisi");
   if (password.length < 4) throw new HttpError(400, "Password minimal 4 karakter");
   if (!["superadmin", "admin"].includes(role)) throw new HttpError(400, "Role tidak valid");
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new HttpError(400, "Format email tidak valid");
+  }
 
   const db = await getDb();
   const existing = await db.collection(COL.users).findOne({ username });
@@ -35,6 +40,8 @@ export const POST = handle(async (req) => {
     id: crypto.randomUUID(),
     name,
     username,
+    email,
+    phone,
     password_hash: hashPassword(password),
     role,
     active: true,

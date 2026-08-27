@@ -9,8 +9,10 @@ export async function paperMutationsPdf(rows, periodLabel) {
   const ctx = await createDoc({ landscape: true });
   docHeader(ctx, "Laporan Mutasi Stok Kertas", periodLabel);
   const header = ["Tanggal", "Kode", "Jenis Kertas", "Gram", "Ukuran", "Transaksi",
-    "Jumlah (Rim)", "Supplier", "PIC", "Mode", "Harga/Rim", "PPN"];
+    "Jumlah (Rim)", "Supplier", "PIC", "Mode", "Harga", "PPN"];
   const weights = [1.15, 0.85, 1.5, 0.6, 1, 0.9, 1, 1.3, 1.1, 1, 1.15, 1.05];
+  // Mode "Total Kiriman" ditampilkan sebagai total harga kiriman, bukan hasil bagi per rim.
+  const hargaOf = (m) => (m.price_mode === "total" ? (m.price_input ?? m.harga_per_rim) : m.harga_per_rim);
   const data = rows.map((m) => [
     formatDateId(m.date),
     dash(m.kode),
@@ -22,7 +24,7 @@ export async function paperMutationsPdf(rows, periodLabel) {
     dash(m.supplier),
     m.pic_name || "",
     m.jenis_transaksi === "masuk" ? MODE_LABEL[m.price_mode] || "-" : "-",
-    m.jenis_transaksi === "masuk" ? formatRp(m.harga_per_rim) : "-",
+    m.jenis_transaksi === "masuk" ? formatRp(hargaOf(m)) : "-",
     m.ppn_ada ? formatRp(m.ppn_nominal) : "-",
   ]);
   drawTable(ctx, header, data, { weights, rightCols: [6, 10, 11] });

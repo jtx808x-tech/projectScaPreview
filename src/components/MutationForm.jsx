@@ -247,7 +247,10 @@ export default function MutationForm({ type, open, onOpenChange, onSaved, editDa
                     <Label>{f.price_mode === "per_rim" && "Harga per Rim (Rp)"}{f.price_mode === "per_kg" && "Harga per Kg (Rp)"}{f.price_mode === "total" && "Total Harga Kiriman (Rp)"}</Label>
                     <Input type="number" value={f.price_input} data-testid="mf-price" onChange={(e) => set("price_input", e.target.value)} />
                   </div>
-                  <div className="rounded-md bg-secondary px-3 py-2 text-sm">Harga per Rim (dihitung): <span className="font-display font-bold">{formatRupiah(hargaPerRim)}</span></div>
+                  {/* Mode "Total Kiriman": tidak perlu tampilkan konversi per rim. */}
+                  {f.price_mode !== "total" && (
+                    <div className="rounded-md bg-secondary px-3 py-2 text-sm" data-testid="mf-price-preview">Harga per Rim (dihitung): <span className="font-display font-bold">{formatRupiah(hargaPerRim)}</span></div>
+                  )}
                 </>
               )}
               {isInk && (

@@ -56,7 +56,13 @@ export default function MutationsPage({ type }) {
   const base = `/${type}`;
   const nameOf = (m) => isPaper ? m.jenis_kertas : isOther ? m.nama_barang : m.jenis_tinta;
   const unitOf = (m) => isPaper ? "Rim" : isInk ? "Kg" : (m.satuan || "");
-  const priceOf = (m) => isPaper ? m.harga_per_rim : isInk ? m.harga_per_kg : m.harga_per_satuan;
+  // Mode "Total Kiriman": tampilkan total harga kiriman apa adanya (bukan hasil bagi per rim).
+  const priceOf = (m) => {
+    if (isPaper) {
+      return m.price_mode === "total" ? (m.price_input ?? m.harga_per_rim) : m.harga_per_rim;
+    }
+    return isInk ? m.harga_per_kg : m.harga_per_satuan;
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -265,7 +271,7 @@ export default function MutationsPage({ type }) {
                     <TableCell className="whitespace-nowrap text-right">
                       {m.jenis_transaksi === "masuk" ? formatRupiah(priceOf(m)) : "-"}
                       {isPaper && m.jenis_transaksi === "masuk" && m.price_mode && (
-                        <div className="font-sans text-[10px] text-muted-foreground">{{ per_rim: "per rim", per_kg: "per kg", total: "total" }[m.price_mode]}</div>
+                        <div className="font-sans text-[10px] text-muted-foreground">{{ per_rim: "per rim", per_kg: "per kg", total: "total kiriman" }[m.price_mode]}</div>
                       )}
                     </TableCell>
                   )}
