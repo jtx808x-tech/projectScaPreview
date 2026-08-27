@@ -27,7 +27,7 @@ export default function TablePagination({
 
   return (
     <div
-      className={`flex w-full flex-wrap items-center justify-between gap-3 border-t border-border px-3 py-2.5 sm:gap-8 ${className}`}
+      className={`sticky bottom-0 z-10 flex w-full flex-wrap items-center justify-between gap-3 border-t border-border bg-card px-3 py-2.5 sm:gap-8 ${className}`}
       data-testid="table-pagination"
     >
       <div className="whitespace-nowrap text-sm text-muted-foreground">

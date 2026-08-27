@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/table";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
 import PageContainer from "@/components/layout/PageContainer";
+import TablePagination from "@/components/TablePagination";
 import UserEditDialog from "@/components/UserEditDialog";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
@@ -42,6 +43,23 @@ function Inner() {
   const [delUser, setDelUser] = useState(null);
   // Kelola kredensial user (khusus Superadmin, boleh untuk akun sendiri)
   const [editUser, setEditUser] = useState(null);
+
+  // Pagination lokal per tabel (log aktivitas, audit mutasi, daftar user)
+  const [actPage, setActPage] = useState(1);
+  const [actSize, setActSize] = useState(25);
+  const [audPage, setAudPage] = useState(1);
+  const [audSize, setAudSize] = useState(25);
+  const [usrPage, setUsrPage] = useState(1);
+  const [usrSize, setUsrSize] = useState(25);
+
+  const paginate = (rows, page, size) => rows.slice((page - 1) * size, page * size);
+  const activityRows = paginate(activity, actPage, actSize);
+  const auditRows = paginate(audit, audPage, audSize);
+  const userRows = paginate(users, usrPage, usrSize);
+
+  useEffect(() => { setActPage(1); }, [actSize]);
+  useEffect(() => { setAudPage(1); }, [audSize]);
+  useEffect(() => { setUsrPage(1); }, [usrSize]);
 
   const loadLogs = useCallback(() => {
     api.get("/logs/activity").then((r) => setActivity(r.data)).catch(() => {});
@@ -92,14 +110,15 @@ function Inner() {
         </TabsList>
 
         <TabsContent value="activity">
-          <Card className="overflow-x-auto">
+          <Card className="flex flex-col overflow-hidden">
+            <div className="max-h-[60vh] overflow-auto">
             <Table>
-              <TableHeader>
+              <TableHeader className="sticky top-0 z-10 bg-card">
                 <TableRow><TableHead>Nama</TableHead><TableHead>Username</TableHead>
                   <TableHead>Waktu Login</TableHead><TableHead>Waktu Logout</TableHead><TableHead>Keterangan</TableHead></TableRow>
               </TableHeader>
               <TableBody data-testid="activity-log-table">
-                {activity.length ? activity.map((a) => (
+                {activityRows.length ? activityRows.map((a) => (
                   <TableRow key={a.id}>
                     <TableCell className="font-medium">{a.name}</TableCell>
                     <TableCell>{a.username}</TableCell>
@@ -110,18 +129,29 @@ function Inner() {
                 )) : <TableRow className="hover:bg-transparent"><TableCell colSpan={5} className="py-6"><Empty className="py-3"><EmptyHeader><EmptyMedia variant="icon"><Inbox /></EmptyMedia><EmptyTitle>Belum ada log aktivitas</EmptyTitle><EmptyDescription>Log tercatat otomatis saat ada aktivitas pengguna.</EmptyDescription></EmptyHeader></Empty></TableCell></TableRow>}
               </TableBody>
             </Table>
+            </div>
+            {activity.length > 0 && (
+              <TablePagination
+                page={actPage}
+                pageSize={actSize}
+                total={activity.length}
+                onPageChange={setActPage}
+                onPageSizeChange={setActSize}
+              />
+            )}
           </Card>
         </TabsContent>
 
         <TabsContent value="audit">
-          <Card className="overflow-x-auto">
+          <Card className="flex flex-col overflow-hidden">
+            <div className="max-h-[60vh] overflow-auto">
             <Table>
-              <TableHeader>
+              <TableHeader className="sticky top-0 z-10 bg-card">
                 <TableRow><TableHead>Waktu</TableHead><TableHead>User</TableHead><TableHead>Aksi</TableHead>
                   <TableHead>Tipe</TableHead><TableHead>Detail</TableHead></TableRow>
               </TableHeader>
               <TableBody data-testid="audit-log-table">
-                {audit.length ? audit.map((a) => (
+                {auditRows.length ? auditRows.map((a) => (
                   <TableRow key={a.id}>
                     <TableCell className="whitespace-nowrap">{formatDateTimeID(a.timestamp)}</TableCell>
                     <TableCell className="font-medium">{a.name}</TableCell>
@@ -137,6 +167,16 @@ function Inner() {
                 )) : <TableRow className="hover:bg-transparent"><TableCell colSpan={5} className="py-6"><Empty className="py-3"><EmptyHeader><EmptyMedia variant="icon"><Inbox /></EmptyMedia><EmptyTitle>Belum ada log audit</EmptyTitle><EmptyDescription>Log audit tercatat saat ada perubahan data.</EmptyDescription></EmptyHeader></Empty></TableCell></TableRow>}
               </TableBody>
             </Table>
+            </div>
+            {audit.length > 0 && (
+              <TablePagination
+                page={audPage}
+                pageSize={audSize}
+                total={audit.length}
+                onPageChange={setAudPage}
+                onPageSizeChange={setAudSize}
+              />
+            )}
           </Card>
         </TabsContent>
 
@@ -174,14 +214,14 @@ function Inner() {
                   </DialogContent>
                 </Dialog>
               </div>
-              <div className="overflow-x-auto">
+              <div className="max-h-[55vh] overflow-auto">
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="sticky top-0 z-10 bg-card">
                     <TableRow><TableHead>Nama</TableHead><TableHead>Username</TableHead><TableHead>Email</TableHead><TableHead>Role</TableHead>
                       <TableHead>Status</TableHead><TableHead className="text-right">Aksi</TableHead></TableRow>
                   </TableHeader>
                   <TableBody data-testid="users-table">
-                    {users.map((u) => (
+                    {userRows.map((u) => (
                       <TableRow key={u.id}>
                         <TableCell className="font-medium">{u.name}</TableCell>
                         <TableCell>{u.username}</TableCell>
@@ -200,6 +240,18 @@ function Inner() {
                   </TableBody>
                 </Table>
               </div>
+              {users.length > usrSize && (
+                <div className="-mx-5 -mb-5 mt-3">
+                  <TablePagination
+                    page={usrPage}
+                    pageSize={usrSize}
+                    total={users.length}
+                    onPageChange={setUsrPage}
+                    onPageSizeChange={setUsrSize}
+                    pageSizeOptions={[10, 25, 50]}
+                  />
+                </div>
+              )}
             </Card>
 
             <Card className="p-5">
