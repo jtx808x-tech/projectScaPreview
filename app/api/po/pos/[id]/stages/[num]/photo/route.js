@@ -3,6 +3,27 @@ import { handle, json, HttpError } from "@/server/http";
 import { requireAuth } from "@/server/auth";
 import { getDb, COL, nowIso } from "@/server/mongo";
 import { putObject } from "@/server/r2";
+import sharp from "sharp";
+
+// Kompres foto agar preview ringan di semua device/koneksi.
+// Resize max 1600px sisi terpanjang, konversi ke JPEG quality 78.
+async function compressImage(buf, contentType) {
+  try {
+    if (!String(contentType || "").startsWith("image/")) return null;
+    if (contentType === "image/gif" || contentType === "image/svg+xml") return null;
+    const out = await sharp(buf)
+      .rotate() // hormati EXIF orientation (foto HP)
+      .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
+      .jpeg({ quality: 78, mozjpeg: true })
+      .toBuffer();
+    // Pakai hasil kompresi hanya jika memang lebih kecil
+    if (out.length < buf.length) return out;
+    return null;
+  } catch (e) {
+    console.warn("[photo] kompresi gagal, pakai file asli:", e?.message);
+    return null;
+  }
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,12 +51,20 @@ export const POST = handle(async (req, { params }) => {
   const po = await db.collection(COL.pos).findOne({ id });
   if (!po) throw new HttpError(404, "PO tidak ditemukan");
 
-  const buf = Buffer.from(await file.arrayBuffer());
-  const contentType = file.type || "application/octet-stream";
+  let buf = Buffer.from(await file.arrayBuffer());
+  let contentType = file.type || "application/octet-stream";
+  let ext = extOf(file.name);
+  const safeName = sanitize(file.name);
+
+  const compressed = await compressImage(buf, contentType);
+  if (compressed) {
+    buf = compressed;
+    contentType = "image/jpeg";
+    ext = "jpg";
+  }
+
   const size = buf.length;
   const fileId = crypto.randomUUID();
-  const ext = extOf(file.name);
-  const safeName = sanitize(file.name);
   const key = `sca-production/uploads/${id}/${fileId}.${ext}`;
 
   const { publicUrl } = await putObject(key, buf, contentType);
