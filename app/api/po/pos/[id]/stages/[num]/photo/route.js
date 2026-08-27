@@ -3,14 +3,16 @@ import { handle, json, HttpError } from "@/server/http";
 import { requireAuth } from "@/server/auth";
 import { getDb, COL, nowIso } from "@/server/mongo";
 import { putObject } from "@/server/r2";
-import sharp from "sharp";
 
 // Kompres foto agar preview ringan di semua device/koneksi.
 // Resize max 1600px sisi terpanjang, konversi ke JPEG quality 78.
+// sharp di-import lazy agar build/start tidak pernah gagal bila binary
+// platform tidak tersedia — upload tetap jalan dengan file asli.
 async function compressImage(buf, contentType) {
   try {
     if (!String(contentType || "").startsWith("image/")) return null;
     if (contentType === "image/gif" || contentType === "image/svg+xml") return null;
+    const sharp = (await import("sharp")).default;
     const out = await sharp(buf)
       .rotate() // hormati EXIF orientation (foto HP)
       .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
