@@ -209,13 +209,13 @@ export default function MutationsPage({ type }) {
         </div>
       </Card>
 
-      <Card className="overflow-hidden">
+      <Card className="flex flex-col overflow-hidden">
         {loading && rows.length === 0 ? (
           <TableSkeleton columns={colCount} rows={5} />
         ) : (
-        <div className="overflow-x-auto">
+        <div className="max-h-[60vh] overflow-auto">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 z-10 bg-card">
               <TableRow>
                 {show("date") && <TableHead>Tanggal</TableHead>}
                 {show("kode") && <TableHead>Kode</TableHead>}
