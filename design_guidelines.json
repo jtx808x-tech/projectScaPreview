@@ -1,0 +1,150 @@
+{
+  "typography": {
+    "headings": {
+      "family": "Manrope, sans-serif",
+      "style": "Swiss Brutalist",
+      "weight": "font-bold to font-extrabold",
+      "tracking": "tracking-tight",
+      "description": "Used for all dashboard titles, metric cards, and primary headers. Professional, modern, and sharp."
+    },
+    "body": {
+      "family": "IBM Plex Sans, sans-serif",
+      "weight": "font-normal",
+      "description": "Used for data tables, form inputs, and general reading. Highly legible for numbers and dense data."
+    },
+    "scale": {
+      "h1": "text-4xl sm:text-5xl font-extrabold tracking-tight",
+      "h2": "text-2xl sm:text-3xl font-bold tracking-tight",
+      "h3": "text-xl sm:text-2xl font-bold",
+      "h4": "text-lg sm:text-xl font-semibold",
+      "body": "text-base",
+      "small": "text-sm",
+      "tiny": "text-xs uppercase tracking-[0.2em]"
+    }
+  },
+  "colors": {
+    "archetype": "ARCHETYPE 4: SWISS & HIGH-CONTRAST (Modified for Printing/Inventory)",
+    "light_mode": {
+      "background": "bg-stone-50",
+      "surface": "bg-white",
+      "text_primary": "text-stone-950",
+      "text_secondary": "text-stone-600",
+      "border": "border-stone-200",
+      "primary": "bg-blue-600 text-white",
+      "primary_hover": "hover:bg-blue-700",
+      "accent_paper": "bg-blue-500",
+      "accent_ink": "bg-rose-500",
+      "success": "bg-emerald-500",
+      "warning": "bg-amber-500",
+      "danger": "bg-red-500"
+    },
+    "dark_mode": {
+      "background": "bg-zinc-950",
+      "surface": "bg-zinc-900",
+      "text_primary": "text-zinc-50",
+      "text_secondary": "text-zinc-400",
+      "border": "border-zinc-800",
+      "primary": "bg-blue-600 text-white",
+      "primary_hover": "hover:bg-blue-500",
+      "accent_paper": "bg-blue-500",
+      "accent_ink": "bg-rose-500",
+      "success": "bg-emerald-500",
+      "warning": "bg-amber-500",
+      "danger": "bg-red-500"
+    },
+    "rules": [
+      "The 'Tinted Grey' Rule: Never use pure #000000. Zinc and Stone provide the slight tint.",
+      "Contrast Check: Ensure text meets APCA standards. Normal text min 4.5:1, large text 3:1.",
+      "Hover States: ALWAYS explicitly set text color on hover (e.g. hover:bg-zinc-800 hover:text-white).",
+      "DO NOT use teal green or teal blue (#1B93A4) for dashboards."
+    ]
+  },
+  "visual_enhancers": {
+    "surfaces": "Grid Borders (The 'Technical' Look). 1px subtle borders (border-border/40) for dashboard cards and tables. No heavy shadows, flat backgrounds.",
+    "radius": "Subtle roundness, max 8px border-radius (rounded-md).",
+    "glassmorphism": "Used ONLY for sticky headers or floating navs. backdrop-blur-xl bg-white/70 (Light) or bg-zinc-950/70 (Dark) with 1px delicate inner stroke.",
+    "transparency": "DO NOT use complete transparent background in header, overlays, or dropdowns. Always use solid or blurred semi-transparent backgrounds."
+  },
+  "grids_and_layouts": {
+    "dashboard_grid": "MODE B: High Density Grid. Base Grid: grid-cols-1 md:grid-cols-3 lg:grid-cols-4. Tight gap (gap-4 or gap-6).",
+    "span_logic": "Summary metric cards: col-span-1. Main charts: col-span-2 or col-span-3. Feeds/Lists: col-span-1 row-span-2.",
+    "spacing": "Generous Spacing Philosophy. Use p-6 or p-8 inside cards with borders to prevent text collision. Main layout padding p-4 md:p-8.",
+    "alignment": "Paragraphs, labels, inputs, tabular data: Left-align. Numeric data in tables: Right-align. DO NOT center-align the app container."
+  },
+  "components": {
+    "libraries": [
+      "shadcn/ui (tables, dropdowns, dialogs, cards, tabs, input, select, forms)",
+      "Recharts (via shadcn/ui charts)",
+      "Phosphor Icons (@phosphor-icons/react) for dense dashboards and developer tools",
+      "Sonner (for toast notifications)"
+    ],
+    "rules": [
+      "DO NOT use HTML-based components for advanced interactions. Use Shadcn calendar, dropdown-menu, etc.",
+      "Go cardless, rectangular, dense styles where possible instead of overusing generic card components.",
+      "Customize spacings and radii to match the 8px max radius rule.",
+      "Buttons: Modern styles, sharp or slightly rounded, with interaction animations. NEVER pill-shaped for this technical dashboard, stick to rounded-md.",
+      "Always include `data-testid` attribute in kebab-case for all interactive/key elements (e.g. `data-testid='login-submit-button'`)."
+    ],
+    "installation_commands": [
+      "yarn add @phosphor-icons/react",
+      "yarn add recharts",
+      "yarn add sonner"
+    ]
+  },
+  "motion": {
+    "hover_states": "Slight lift (-translate-y-1) for cards, subtle shadow change, border color darkens/lightens.",
+    "transitions": "Use specific properties (e.g. transition: transform 0.2s ease, opacity 0.2s ease). NEVER use `transition: all`.",
+    "micro_interactions": "Smooth state changes for buttons and tabs. Entrance staggered animations for lists and table rows."
+  },
+  "accessibility": {
+    "contrast": "Must meet minimum WCAG AA / APCA standards.",
+    "focus_states": "Must have HIGHER contrast than default state (e.g. focus:ring-2 focus:ring-blue-500).",
+    "reduced_motion": "Respect prefers-reduced-motion.",
+    "aria": "Add aria-hidden='true' to purely decorative animations/icons."
+  },
+  "media": {
+    "image_urls": [
+      {
+        "url": "https://images.pexels.com/photos/33036772/pexels-photo-33036772.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "category": "auth_background",
+        "description": "Stacked rolled paper tubes. Use as a background or side panel for the Login screen. Apply a heavy overlay (e.g. bg-zinc-900/80) so the login form is readable."
+      },
+      {
+        "url": "https://images.pexels.com/photos/19316517/pexels-photo-19316517.png?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "category": "empty_state",
+        "description": "Industrial printing press. Can be used for empty states or placeholder illustrations if needed."
+      }
+    ]
+  },
+  "instructions_to_main_agent": {
+    "1": "Implement a full-stack dashboard (hybrid_fullstack) for 'StokKu'.",
+    "2": "Setup Dark/Light mode toggle that saves user preference.",
+    "3": "Use JavaScript (.js/.jsx), NOT TypeScript.",
+    "4": "Dashboard must include total paper (Rim) & ink (Kg) cards, daily mutations, trend charts (Masuk vs Keluar), recent mutations, and nominal Rupiah (Superadmin only).",
+    "5": "Implement Forms for Paper and Ink mutations (Masuk/Keluar) with fields for per Rim/Kg price, Total, and PPN toggle.",
+    "6": "Implement tables with filters & search for history.",
+    "7": "Create Laporan Stok ringkas + Download PDF button.",
+    "8": "Create protected 'Laporan Detail' section requiring password. Include pie/bar charts, trends, period comparison, and monthly PPN.",
+    "9": "Create Log & Manajemen User section (activity log, register, change password).",
+    "10": "Add Fitur Tutup Tahun (Year-end closing).",
+    "11": "Format numbers to Rupiah ('Rp 1.000.000') and dates to 'DD Month YYYY' in Indonesian.",
+    "12": "Assign Superadmin vs Admin/PIC roles clearly in UI.",
+    "13": "NEVER use placeholder text for logos or images. Use the provided Unsplash/Pexels URLs or generic SVG icons."
+  },
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "You tend to converge toward generic, 'on distribution' outputs. Avoid 'AI slop' aesthetic.",
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients.",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "Use glass-morphism effects with backdrop filters (12-24px blur) only where appropriate (headers).",
+    "You MUST NOT apply universal transition. Eg: transition: all. Always add transitions for specific interactive elements excluding transforms.",
+    "You MUST NOT center align the app container, ie do not add .App { text-align: center; } in the css file.",
+    "Always use modern button styles (rounded-md for this tech dashboard) with interaction animations & color relevant to the app style.",
+    "NEVER use AI assistant Emoji characters like 🤖🧠💭💡🔮🎯 etc for icons. Use Phosphor Icons.",
+    "Every interaction needs micro-animations - hover states, transitions, entrance animations. Static = dead.",
+    "Use 2-3x more spacing than feels comfortable.",
+    "Prioritize using pre-existing components from src/components/ui when applicable.",
+    "Use sonner for toasts. Component located in /app/src/components/ui/sonner.jsx (or similar js path).",
+    "All interactive and key informational elements MUST include a `data-testid` attribute in kebab-case."
+  ]
+}
