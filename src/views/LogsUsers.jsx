@@ -1,0 +1,232 @@
+import { useCallback, useEffect, useState } from "react";
+import { UserPlus, Power, Trash2, KeyRound, ShieldCheck } from "lucide-react";
+import { toast } from "sonner";
+import api from "@/lib/api";
+import { useAuth, apiError } from "@/context/AuthContext";
+import { formatDateTimeID } from "@/lib/format";
+import SectionGate from "@/components/SectionGate";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import {
+  Tabs, TabsList, TabsTrigger, TabsContent,
+} from "@/components/ui/tabs";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
+
+function Inner() {
+  const { user } = useAuth();
+  const isSuper = user?.role === "superadmin";
+  const [activity, setActivity] = useState([]);
+  const [audit, setAudit] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [regOpen, setRegOpen] = useState(false);
+  const [reg, setReg] = useState({ name: "", username: "", password: "", role: "admin" });
+  const [tempPwd, setTempPwd] = useState("");
+  const [delUser, setDelUser] = useState(null);
+
+  const loadLogs = useCallback(() => {
+    api.get("/logs/activity").then((r) => setActivity(r.data)).catch(() => {});
+    api.get("/logs/audit").then((r) => setAudit(r.data)).catch(() => {});
+    if (isSuper) api.get("/users").then((r) => setUsers(r.data)).catch(() => {});
+  }, [isSuper]);
+
+  useEffect(() => { loadLogs(); }, [loadLogs]);
+
+  const doRegister = async () => {
+    if (!reg.name || !reg.username || !reg.password) { toast.error("Lengkapi semua field."); return; }
+    try {
+      await api.post("/users", reg);
+      toast.success("User berhasil didaftarkan.");
+      setRegOpen(false); setReg({ name: "", username: "", password: "", role: "admin" });
+      loadLogs();
+    } catch (e) { toast.error(apiError(e)); }
+  };
+
+  const toggleUser = async (u) => {
+    try { await api.patch(`/users/${u.id}/toggle`); toast.success("Status user diperbarui."); loadLogs(); }
+    catch (e) { toast.error(apiError(e)); }
+  };
+
+  const doDeleteUser = async () => {
+    try { await api.delete(`/users/${delUser.id}`); toast.success("User dihapus."); setDelUser(null); loadLogs(); }
+    catch (e) { toast.error(apiError(e)); }
+  };
+
+  const changeTemp = async () => {
+    if (tempPwd.length < 4) { toast.error("Password minimal 4 karakter."); return; }
+    try { await api.post("/settings/temp-password", { new_password: tempPwd }); toast.success("Password akses sementara diperbarui."); setTempPwd(""); }
+    catch (e) { toast.error(apiError(e)); }
+  };
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h1 className="font-display text-3xl font-extrabold tracking-tight">Log & Manajemen User</h1>
+        <p className="text-sm text-muted-foreground">Aktivitas login, audit mutasi, dan pengelolaan user.</p>
+      </div>
+
+      <Tabs defaultValue="activity">
+        <TabsList className="flex-wrap">
+          <TabsTrigger value="activity" data-testid="tab-activity">Log Aktivitas</TabsTrigger>
+          <TabsTrigger value="audit" data-testid="tab-audit">Audit Mutasi</TabsTrigger>
+          {isSuper && <TabsTrigger value="users" data-testid="tab-users">Manajemen User</TabsTrigger>}
+        </TabsList>
+
+        <TabsContent value="activity">
+          <Card className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow><TableHead>Nama</TableHead><TableHead>Username</TableHead>
+                  <TableHead>Waktu Login</TableHead><TableHead>Waktu Logout</TableHead><TableHead>Keterangan</TableHead></TableRow>
+              </TableHeader>
+              <TableBody data-testid="activity-log-table">
+                {activity.length ? activity.map((a) => (
+                  <TableRow key={a.id}>
+                    <TableCell className="font-medium">{a.name}</TableCell>
+                    <TableCell>{a.username}</TableCell>
+                    <TableCell className="whitespace-nowrap">{formatDateTimeID(a.login_time)}</TableCell>
+                    <TableCell className="whitespace-nowrap">{a.logout_time ? formatDateTimeID(a.logout_time) : <Badge variant="outline">Aktif</Badge>}</TableCell>
+                    <TableCell>{a.logout_type || "-"}</TableCell>
+                  </TableRow>
+                )) : <TableRow><TableCell colSpan={5} className="py-8 text-center text-muted-foreground">Belum ada log.</TableCell></TableRow>}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="audit">
+          <Card className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow><TableHead>Waktu</TableHead><TableHead>User</TableHead><TableHead>Aksi</TableHead>
+                  <TableHead>Tipe</TableHead><TableHead>Detail</TableHead></TableRow>
+              </TableHeader>
+              <TableBody data-testid="audit-log-table">
+                {audit.length ? audit.map((a) => (
+                  <TableRow key={a.id}>
+                    <TableCell className="whitespace-nowrap">{formatDateTimeID(a.timestamp)}</TableCell>
+                    <TableCell className="font-medium">{a.name}</TableCell>
+                    <TableCell><Badge variant="outline" className="capitalize">{a.action}</Badge></TableCell>
+                    <TableCell className="capitalize">{a.mutation_type === "paper" ? "Kertas" : a.mutation_type === "ink" ? "Tinta" : a.mutation_type}</TableCell>
+                    <TableCell className="max-w-xs">
+                      <details>
+                        <summary className="cursor-pointer text-xs text-primary">Lihat sebelum/sesudah</summary>
+                        <pre className="mt-1 max-h-40 overflow-auto rounded bg-secondary p-2 text-[10px]">{JSON.stringify({ sebelum: a.before, sesudah: a.after }, null, 1)}</pre>
+                      </details>
+                    </TableCell>
+                  </TableRow>
+                )) : <TableRow><TableCell colSpan={5} className="py-8 text-center text-muted-foreground">Belum ada audit.</TableCell></TableRow>}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+
+        {isSuper && (
+          <TabsContent value="users" className="space-y-5">
+            <Card className="p-5">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="font-display text-lg font-bold">Daftar User</h3>
+                <Dialog open={regOpen} onOpenChange={setRegOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="gap-2" data-testid="register-user-button"><UserPlus className="h-4 w-4" /> Registrasi User</Button>
+                  </DialogTrigger>
+                  <DialogContent data-testid="register-dialog">
+                    <DialogHeader><DialogTitle>Registrasi User Baru</DialogTitle></DialogHeader>
+                    <div className="space-y-3">
+                      <div className="space-y-1.5"><Label>Nama</Label><Input value={reg.name} data-testid="reg-name" onChange={(e) => setReg({ ...reg, name: e.target.value })} /></div>
+                      <div className="space-y-1.5"><Label>Username</Label><Input value={reg.username} data-testid="reg-username" onChange={(e) => setReg({ ...reg, username: e.target.value })} /></div>
+                      <div className="space-y-1.5"><Label>Password</Label><Input type="password" value={reg.password} data-testid="reg-password" onChange={(e) => setReg({ ...reg, password: e.target.value })} /></div>
+                      <div className="space-y-1.5"><Label>Role</Label>
+                        <Select value={reg.role} onValueChange={(v) => setReg({ ...reg, role: v })}>
+                          <SelectTrigger data-testid="reg-role"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="admin">Admin/PIC</SelectItem>
+                            <SelectItem value="superadmin">Superadmin</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setRegOpen(false)}>Batal</Button>
+                      <Button data-testid="reg-submit" onClick={doRegister}>Daftarkan</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow><TableHead>Nama</TableHead><TableHead>Username</TableHead><TableHead>Role</TableHead>
+                      <TableHead>Status</TableHead><TableHead className="text-right">Aksi</TableHead></TableRow>
+                  </TableHeader>
+                  <TableBody data-testid="users-table">
+                    {users.map((u) => (
+                      <TableRow key={u.id}>
+                        <TableCell className="font-medium">{u.name}</TableCell>
+                        <TableCell>{u.username}</TableCell>
+                        <TableCell>{u.role === "superadmin" ? <Badge className="gap-1"><ShieldCheck className="h-3 w-3" /> Superadmin</Badge> : <Badge variant="outline">Admin/PIC</Badge>}</TableCell>
+                        <TableCell>{u.active !== false ? <Badge className="bg-emerald-500/15 text-emerald-600">Aktif</Badge> : <Badge variant="destructive">Nonaktif</Badge>}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button size="icon" variant="ghost" disabled={u.id === user.id} data-testid={`toggle-${u.id}`} onClick={() => toggleUser(u)}><Power className="h-4 w-4" /></Button>
+                            <Button size="icon" variant="ghost" disabled={u.id === user.id} data-testid={`deluser-${u.id}`} onClick={() => setDelUser(u)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </Card>
+
+            <Card className="p-5">
+              <div className="mb-2 flex items-center gap-2">
+                <KeyRound className="h-4 w-4 text-primary" />
+                <h3 className="font-display text-lg font-bold">Ubah Password Akses Sementara</h3>
+              </div>
+              <p className="mb-3 text-sm text-muted-foreground">Password ini dipakai Admin/PIC untuk membuka section terproteksi. Hanya Superadmin yang bisa mengubahnya.</p>
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="space-y-1.5">
+                  <Label>Password Baru</Label>
+                  <Input type="password" className="w-64" value={tempPwd} data-testid="temp-password-input" onChange={(e) => setTempPwd(e.target.value)} />
+                </div>
+                <Button data-testid="change-temp-password-button" onClick={changeTemp}>Simpan Password</Button>
+              </div>
+            </Card>
+          </TabsContent>
+        )}
+      </Tabs>
+
+      <AlertDialog open={!!delUser} onOpenChange={(o) => !o && setDelUser(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus user {delUser?.name}?</AlertDialogTitle>
+            <AlertDialogDescription>Tindakan ini tidak bisa dibatalkan.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction data-testid="confirm-deluser" onClick={doDeleteUser}>Hapus</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+export default function LogsUsers() {
+  return <SectionGate title="Log & Manajemen User"><Inner /></SectionGate>;
+}

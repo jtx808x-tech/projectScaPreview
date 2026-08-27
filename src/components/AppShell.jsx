@@ -1,0 +1,178 @@
+import { useEffect, useRef, useState, useCallback } from "react";
+import { Outlet, NavLink, useNavigate } from "react-router-dom";
+import {
+  LayoutDashboard, FileStack, Droplets, Package, ClipboardList, BarChart3,
+  Users, CalendarX, LogOut, Menu, X, Lock, ShieldCheck, Calculator, Boxes,
+  ListTodo, CalendarDays, Globe,
+} from "lucide-react";
+import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
+import { useLang } from "@/context/LangContext";
+import ThemeToggle from "@/components/ThemeToggle";
+import Logo from "@/components/Logo";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
+
+const TIMEOUT_MS = 60 * 60 * 1000;
+const WARN_MS = 58 * 60 * 1000;
+
+export default function AppShell() {
+  const { user, logout, sectionUnlocked, perms } = useAuth();
+  const { lang, setLang } = useLang();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [warn, setWarn] = useState(false);
+  const warnRef = useRef(null);
+  const outRef = useRef(null);
+
+  const doLogout = useCallback(async (type) => { await logout(type); navigate("/login"); }, [logout, navigate]);
+
+  const resetTimers = useCallback(() => {
+    setWarn(false);
+    clearTimeout(warnRef.current);
+    clearTimeout(outRef.current);
+    warnRef.current = setTimeout(() => setWarn(true), WARN_MS);
+    outRef.current = setTimeout(() => {
+      toast.warning("Anda telah logout otomatis karena tidak aktif.");
+      doLogout("auto");
+    }, TIMEOUT_MS);
+  }, [doLogout]);
+
+  useEffect(() => {
+    const events = ["mousedown", "keydown", "scroll", "touchstart", "click"];
+    const handler = () => resetTimers();
+    events.forEach((e) => window.addEventListener(e, handler));
+    resetTimers();
+    return () => { events.forEach((e) => window.removeEventListener(e, handler)); clearTimeout(warnRef.current); clearTimeout(outRef.current); };
+  }, [resetTimers]);
+
+  const isSuper = user?.role === "superadmin";
+
+  const stokMenu = [
+    { to: "/stok", label: "Dashboard", icon: LayoutDashboard, end: true, show: perms.canStokDashboard },
+    { to: "/stok/kertas", label: "Mutasi Kertas", icon: FileStack, show: perms.canStokMutations },
+    { to: "/stok/tinta", label: "Mutasi Tinta", icon: Droplets, show: perms.canStokMutations },
+    { to: "/stok/lainnya", label: "Mutasi Lain", icon: Package, show: perms.canStokMutations },
+    { to: "/stok/laporan-stok", label: "Laporan Stok", icon: ClipboardList, show: perms.canStokReport },
+    { to: "/stok/laporan-detail", label: "Laporan Detail", icon: BarChart3, locked: true, show: perms.canStokDetail },
+    { to: "/stok/log-user", label: "Log & User", icon: Users, locked: true, show: perms.canStokLogs },
+    { to: "/stok/tutup-tahun", label: "Tutup Tahun", icon: CalendarX, locked: true, show: perms.canStokYearClose },
+  ].filter((m) => m.show);
+
+  const poMenu = [
+    { to: "/po", label: "Dashboard PO", icon: LayoutDashboard, end: true },
+    { to: "/po/pos", label: "Daftar PO", icon: ListTodo },
+    { to: "/po/kalender", label: "Kalender Jadwal", icon: CalendarDays },
+  ];
+
+  const hppMenu = perms.canHpp ? [{ to: "/hpp", label: "Kalkulator HPP", icon: Calculator, end: true }] : [];
+
+  const NavItem = ({ item }) => (
+    <NavLink to={item.to} end={item.end}
+      data-testid={`nav-${item.label.toLowerCase().replace(/[^a-z]+/g, "-")}`}
+      onClick={() => setOpen(false)}
+      className={({ isActive }) =>
+        `flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${isActive
+          ? "bg-primary text-primary-foreground"
+          : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}>
+      <item.icon className="h-4 w-4 shrink-0" />
+      <span className="flex-1">{item.label}</span>
+      {item.locked && !isSuper && !sectionUnlocked && (<Lock className="h-3.5 w-3.5 opacity-60" />)}
+    </NavLink>
+  );
+
+  const SectionHeader = ({ label }) => (
+    <div className="px-3 pt-4 pb-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/70">{label}</div>
+  );
+
+  const SidebarInner = (
+    <div className="flex h-full flex-col">
+      <div className="flex items-center gap-2.5 px-5 py-5 border-b border-border">
+        <Logo size={38} />
+        <div>
+          <div className="font-display text-base font-extrabold tracking-tight leading-none">SCA PORTAL</div>
+          <div className="mt-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Stok • HPP • PO</div>
+        </div>
+      </div>
+      <nav className="flex-1 space-y-0.5 p-3 overflow-y-auto">
+        <SectionHeader label="Laporan Stok SCA" />
+        {stokMenu.map((item) => <NavItem key={item.to} item={item} />)}
+
+        <SectionHeader label="Tracking PO" />
+        {poMenu.map((item) => <NavItem key={item.to} item={item} />)}
+
+        {hppMenu.length > 0 && (
+          <>
+            <SectionHeader label="Kalkulator HPP" />
+            {hppMenu.map((item) => <NavItem key={item.to} item={item} />)}
+          </>
+        )}
+      </nav>
+      <div className="border-t border-border p-4">
+        <div className="mb-3 flex items-center gap-2">
+          {isSuper ? <ShieldCheck className="h-4 w-4 text-primary" /> : <Users className="h-4 w-4 text-muted-foreground" />}
+          <div className="min-w-0">
+            <div className="truncate text-sm font-semibold">{user?.name}</div>
+            <div className="text-xs text-muted-foreground capitalize">{isSuper ? "Superadmin" : "Admin/PIC"}</div>
+          </div>
+        </div>
+        <Button variant="outline" className="w-full justify-start gap-2" data-testid="logout-button" onClick={() => doLogout("manual")}>
+          <LogOut className="h-4 w-4" /> Keluar
+        </Button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="flex min-h-screen bg-background">
+      <aside className="hidden md:flex w-64 shrink-0 flex-col border-r border-border bg-card">
+        {SidebarInner}
+      </aside>
+
+      {open && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 top-0 h-full w-64 bg-card shadow-xl">{SidebarInner}</div>
+        </div>
+      )}
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-border bg-background/70 px-4 py-3 backdrop-blur-xl md:px-8">
+          <Button variant="outline" size="icon" className="md:hidden" data-testid="mobile-menu-button" onClick={() => setOpen((v) => !v)}>
+            {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          </Button>
+          <div className="font-display text-sm font-semibold text-muted-foreground md:text-base">Sistem Terpadu SCA</div>
+          <div className="flex items-center gap-2">
+            <Select value={lang} onValueChange={setLang}>
+              <SelectTrigger className="w-[92px] h-9" data-testid="lang-toggle">
+                <div className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" />{lang === "id" ? "ID" : "EN"}</div>
+              </SelectTrigger>
+              <SelectContent><SelectItem value="id">Indonesia</SelectItem><SelectItem value="en">English</SelectItem></SelectContent>
+            </Select>
+            <ThemeToggle />
+          </div>
+        </header>
+        <main className="flex-1 p-4 md:p-8">
+          <Outlet />
+        </main>
+      </div>
+
+      <AlertDialog open={warn} onOpenChange={setWarn}>
+        <AlertDialogContent data-testid="idle-warning-dialog">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Sesi akan berakhir</AlertDialogTitle>
+            <AlertDialogDescription>Anda tidak aktif selama beberapa waktu. Sistem akan logout otomatis dalam ±2 menit. Klik "Tetap Login" untuk melanjutkan.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="idle-logout-now" onClick={() => doLogout("manual")}>Keluar Sekarang</AlertDialogCancel>
+            <AlertDialogAction data-testid="idle-stay-login" onClick={() => resetTimers()}>Tetap Login</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
