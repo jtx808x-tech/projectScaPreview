@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import * as api from "@/lib/poApi";
+import { API } from "@/lib/api";
 import { useLang } from "@/context/LangContext";
 import { FINISHING_OPTIONS, GLUE_OPTIONS, MACHINES } from "@/lib/poStages";
 import { fmtDate, fmtDateTime } from "@/lib/format";
@@ -375,7 +376,13 @@ function PhotoSection({ po, num, reload, t }) {
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {photos.map((p) => (
             <div key={p.id} className="relative group rounded-xl overflow-hidden border border-border aspect-square">
-              <img src={p.url} alt={p.filename} className="h-full w-full object-cover" />
+              <img
+                src={`${API}/po/pos/${po.id}/stages/${num}/photo/${p.id}`}
+                alt={p.filename}
+                loading="lazy"
+                className="h-full w-full object-cover"
+                data-testid={`photo-img-${p.id}`}
+              />
               <button data-testid={`del-photo-${p.id}`} onClick={() => del(p.id)}
                 className="absolute top-1.5 right-1.5 h-7 w-7 rounded-full bg-destructive text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <X className="h-4 w-4" />
