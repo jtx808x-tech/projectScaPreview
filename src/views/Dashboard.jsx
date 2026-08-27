@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
 } from "recharts";
@@ -31,11 +31,12 @@ const trxBadge = (t) => {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [data, setData] = useState(null);
-
-  useEffect(() => {
-    api.get("/dashboard").then((r) => setData(r.data)).catch(() => {});
-  }, []);
+  // Cache react-query: dashboard tampil instan dari cache, refresh di background.
+  const { data } = useQuery({
+    queryKey: ["dashboard"],
+    queryFn: async () => (await api.get("/dashboard")).data,
+    refetchOnMount: "always",
+  });
 
   if (!data) return <PageContainer isLoading testid="stok-dashboard-loading" />;
 

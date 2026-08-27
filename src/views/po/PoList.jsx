@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Plus, Search, Eye, Pencil, Trash2, Package, FileDown } from "lucide-react";
 import { toast } from "sonner";
@@ -38,20 +39,25 @@ export default function PoList() {
   const [params, setParams] = useSearchParams();
   const bucket = params.get("bucket") || "";
   const [search, setSearch] = useState("");
-  const [pos, setPos] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [debSearch, setDebSearch] = useState("");
   const [delId, setDelId] = useState(null);
   const [month, setMonth] = useState("all");
-  const [allMonths, setAllMonths] = useState([]);
 
   const monthLabel = (m) => new Date(m + "-01T00:00:00").toLocaleDateString(lang === "id" ? "id-ID" : "en-US", { month: "long", year: "numeric" });
 
-  useEffect(() => {
-    api.listPos().then((rows) => {
-      const ms = [...new Set(rows.map((p) => (p.po_date || p.est_start || "").slice(0, 7)).filter((x) => x.length === 7))].sort().reverse();
-      setAllMonths(ms);
-    }).catch(() => {});
-  }, []);
+  // Debounce pencarian 250ms (perilaku lama dipertahankan)
+  useEffect(() => { const h = setTimeout(() => setDebSearch(search), 250); return () => clearTimeout(h); }, [search]);
+
+  // Cache react-query: tampil instan dari cache, refresh otomatis di background.
+  const queryClient = useQueryClient();
+  const { data: allMonths = [] } = useQuery({
+    queryKey: ["po", "months"],
+    queryFn: async () => {
+      const rows = await api.listPos();
+      return [...new Set(rows.map((p) => (p.po_date || p.est_start || "").slice(0, 7)).filter((x) => x.length === 7))].sort().reverse();
+    },
+    refetchOnMount: "always",
+  });
 
   const downloadPdf = async () => {
     try {
@@ -64,24 +70,29 @@ export default function PoList() {
     } catch (e) { toast.error(e?.response?.data?.detail || "Gagal export"); }
   };
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const q = {};
-      if (search) q.search = search;
-      if (bucket) q.bucket = bucket;
-      if (month !== "all") q.month = month;
-      const rows = await api.listPos(q);
-      setPos(rows);
-    } catch (e) { toast.error(e?.response?.data?.detail || "Gagal memuat"); }
-    finally { setLoading(false); }
-  }, [search, bucket, month]);
+  const q = useMemo(() => {
+    const query = {};
+    if (debSearch) query.search = debSearch;
+    if (bucket) query.bucket = bucket;
+    if (month !== "all") query.month = month;
+    return query;
+  }, [debSearch, bucket, month]);
 
-  useEffect(() => { const h = setTimeout(load, 250); return () => clearTimeout(h); }, [load]);
+  const { data: pos = [], isLoading: loading, error } = useQuery({
+    queryKey: ["po", "list", q],
+    queryFn: () => api.listPos(q),
+    placeholderData: keepPreviousData,
+    refetchOnMount: "always",
+  });
+  useEffect(() => { if (error) toast.error(error?.response?.data?.detail || "Gagal memuat"); }, [error]);
 
   const confirmDelete = async () => {
-    try { await api.deletePo(delId); toast.success("PO dihapus"); setDelId(null); load(); }
-    catch (e) { toast.error(e?.response?.data?.detail || "Gagal hapus"); }
+    try {
+      await api.deletePo(delId);
+      toast.success("PO dihapus");
+      setDelId(null);
+      queryClient.invalidateQueries({ queryKey: ["po"] });
+    } catch (e) { toast.error(e?.response?.data?.detail || "Gagal hapus"); }
   };
 
   return (
