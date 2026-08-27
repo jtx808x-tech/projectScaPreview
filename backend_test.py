@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 import json
 
 class StokSCAAPITester:
-    def __init__(self, base_url="https://emergent-deploy-139.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://live-preview-stock.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.token = None
         self.admin_token = None
@@ -91,11 +91,11 @@ class StokSCAAPITester:
     def test_login_superadmin(self):
         """Test superadmin login"""
         success, response = self.run_test(
-            "Login Superadmin (Jeffsca/jeff3131)",
+            "Login Superadmin (Jeffsca/jeff3131 + role=superadmin)",
             "POST",
             "auth/login",
             200,
-            data={"username": "Jeffsca", "password": "jeff3131"}
+            data={"username": "Jeffsca", "password": "jeff3131", "role": "superadmin"}
         )
         if success and 'token' in response:
             self.token = response['token']
@@ -110,7 +110,7 @@ class StokSCAAPITester:
             "POST",
             "auth/login",
             401,
-            data={"username": "Jeffsca", "password": "wrongpassword"}
+            data={"username": "Jeffsca", "password": "wrongpassword", "role": "superadmin"}
         )
         return success
 
@@ -550,7 +550,7 @@ class StokSCAAPITester:
             "POST",
             "auth/login",
             200,
-            data={"username": user['username'], "password": user['password']}
+            data={"username": user['username'], "password": user['password'], "role": "admin"}
         )
         if success and 'token' in response:
             self.admin_token = response['token']

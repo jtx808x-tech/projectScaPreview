@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { FileDown, Filter } from "lucide-react";
+import { FileDown, Filter, Inbox } from "lucide-react";
 import { toast } from "sonner";
 import api, { downloadPdf } from "@/lib/api";
 import { apiError } from "@/context/AuthContext";
@@ -13,6 +13,7 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
 
 export default function StockReport() {
   const [data, setData] = useState(null);
@@ -137,7 +138,7 @@ export default function StockReport() {
                     <TableCell><div className="flex flex-wrap gap-1">{badges(p)}</div></TableCell>
                     <TableCell className="text-right font-semibold">{formatNumber(filtered ? supStock(p, fSupplier) : p.stock)} Rim</TableCell>
                   </TableRow>
-                )) : <TableRow><TableCell colSpan={5} className="py-8 text-center text-muted-foreground">Belum ada data.</TableCell></TableRow>}
+                )) : <TableRow className="hover:bg-transparent"><TableCell colSpan={5} className="py-6"><Empty className="py-3"><EmptyHeader><EmptyMedia variant="icon"><Inbox /></EmptyMedia><EmptyTitle>Belum ada data stok</EmptyTitle><EmptyDescription>Data muncul setelah ada mutasi masuk.</EmptyDescription></EmptyHeader></Empty></TableCell></TableRow>}
               </TableBody>
             </Table>
           </div>
@@ -159,7 +160,7 @@ export default function StockReport() {
                     <TableCell><div className="flex flex-wrap gap-1">{badges(p)}</div></TableCell>
                     <TableCell className="text-right font-semibold">{formatNumber(filtered ? supStock(p, fSupplier) : p.stock)} Kg</TableCell>
                   </TableRow>
-                )) : <TableRow><TableCell colSpan={3} className="py-8 text-center text-muted-foreground">Belum ada data.</TableCell></TableRow>}
+                )) : <TableRow className="hover:bg-transparent"><TableCell colSpan={3} className="py-6"><Empty className="py-3"><EmptyHeader><EmptyMedia variant="icon"><Inbox /></EmptyMedia><EmptyTitle>Belum ada data stok</EmptyTitle><EmptyDescription>Data muncul setelah ada mutasi masuk.</EmptyDescription></EmptyHeader></Empty></TableCell></TableRow>}
               </TableBody>
             </Table>
           </div>
@@ -183,7 +184,7 @@ export default function StockReport() {
                   <TableCell><div className="flex flex-wrap gap-1">{badges(p)}</div></TableCell>
                   <TableCell className="text-right font-semibold">{formatNumber(filtered ? supStock(p, fSupplier) : p.stock)} {p.satuan || ""}</TableCell>
                 </TableRow>
-              )) : <TableRow><TableCell colSpan={4} className="py-8 text-center text-muted-foreground">Belum ada data.</TableCell></TableRow>}
+              )) : <TableRow className="hover:bg-transparent"><TableCell colSpan={4} className="py-6"><Empty className="py-3"><EmptyHeader><EmptyMedia variant="icon"><Inbox /></EmptyMedia><EmptyTitle>Belum ada data stok</EmptyTitle><EmptyDescription>Data muncul setelah ada mutasi masuk.</EmptyDescription></EmptyHeader></Empty></TableCell></TableRow>}
             </TableBody>
           </Table>
         </div>

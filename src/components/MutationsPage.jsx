@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Plus, Search, FileDown, Pencil, Trash2, Link2 } from "lucide-react";
+import { Plus, Search, FileDown, Pencil, Trash2, Link2, Inbox } from "lucide-react";
 import { toast } from "sonner";
 import api, { downloadPdf } from "@/lib/api";
 import { useAuth, apiError } from "@/context/AuthContext";
@@ -16,6 +16,8 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
+import TableSkeleton from "@/components/TableSkeleton";
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel,
@@ -169,6 +171,9 @@ export default function MutationsPage({ type }) {
       </Card>
 
       <Card className="overflow-hidden">
+        {loading && rows.length === 0 ? (
+          <TableSkeleton columns={colCount} rows={5} />
+        ) : (
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -189,7 +194,17 @@ export default function MutationsPage({ type }) {
             </TableHeader>
             <TableBody data-testid="mutations-table-body">
               {!loading && rows.length === 0 && (
-                <TableRow><TableCell colSpan={colCount} className="py-10 text-center text-muted-foreground">Belum ada data mutasi.</TableCell></TableRow>
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={colCount} className="py-6">
+                    <Empty className="py-4">
+                      <EmptyHeader>
+                        <EmptyMedia variant="icon"><Inbox /></EmptyMedia>
+                        <EmptyTitle>Belum ada data mutasi</EmptyTitle>
+                        <EmptyDescription>Tambah mutasi baru atau ubah filter periode / pencarian.</EmptyDescription>
+                      </EmptyHeader>
+                    </Empty>
+                  </TableCell>
+                </TableRow>
               )}
               {rows.map((m) => (
                 <TableRow key={m.id} className="stagger-in">
@@ -212,7 +227,7 @@ export default function MutationsPage({ type }) {
                   <TableCell className="text-right whitespace-nowrap">
                     {m.jenis_transaksi === "masuk" ? formatRupiah(priceOf(m)) : "-"}
                     {isPaper && m.jenis_transaksi === "masuk" && m.price_mode && (
-                      <div className="text-[10px] text-muted-foreground">{{ per_rim: "per rim", per_kg: "per kg", total: "total" }[m.price_mode]}</div>
+                      <div className="font-sans text-[10px] text-muted-foreground">{{ per_rim: "per rim", per_kg: "per kg", total: "total" }[m.price_mode]}</div>
                     )}
                   </TableCell>
                   <TableCell className="text-right whitespace-nowrap">{m.ppn_ada ? formatRupiah(m.ppn_nominal) : "-"}</TableCell>
@@ -227,6 +242,7 @@ export default function MutationsPage({ type }) {
             </TableBody>
           </Table>
         </div>
+        )}
       </Card>
 
       <MutationForm type={type} open={formOpen} onOpenChange={setFormOpen} onSaved={load}

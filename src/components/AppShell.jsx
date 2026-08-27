@@ -76,10 +76,10 @@ export default function AppShell() {
       data-testid={`nav-${item.label.toLowerCase().replace(/[^a-z]+/g, "-")}`}
       onClick={() => setOpen(false)}
       className={({ isActive }) =>
-        `flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${isActive
-          ? "bg-primary text-primary-foreground"
+        `flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-[color,background-color,box-shadow,opacity] duration-200 ease-out ${isActive
+          ? "bg-primary text-primary-foreground shadow-glow"
           : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}>
-      <item.icon className="h-4 w-4 shrink-0" />
+      <item.icon className="h-4 w-4 shrink-0 transition-transform duration-200 ease-out" />
       <span className="flex-1">{item.label}</span>
       {item.locked && !isSuper && !sectionUnlocked && (<Lock className="h-3.5 w-3.5 opacity-60" />)}
     </NavLink>
@@ -107,7 +107,7 @@ export default function AppShell() {
 
         {hppMenu.length > 0 && (
           <>
-            <SectionHeader label="Kalkulator HPP" />
+            <SectionHeader label="Kalkulator" />
             {hppMenu.map((item) => <NavItem key={item.to} item={item} />)}
           </>
         )}

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LogIn, ShieldCheck, Users } from "lucide-react";
+import { LogIn, ShieldCheck, Users, Loader2 } from "lucide-react";
 import Logo from "@/components/Logo";
 
 const BG = "https://images.unsplash.com/photo-1587293852726-70cdb56c2866?crop=entropy&cs=srgb&fm=jpg&q=85&w=1400";
@@ -37,12 +37,13 @@ export default function Login() {
       <div className="relative hidden lg:block">
         <img src={BG} alt="Percetakan SCA" className="h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/35 to-black/75" />
+        <div className="absolute inset-0 bg-[radial-gradient(120%_80%_at_50%_0%,transparent_35%,rgba(0,0,0,0.35)_100%)]" />
         <div className="absolute inset-0 flex flex-col justify-between p-12 text-white">
-          <div className="flex items-center gap-3">
+          <div className="stagger-in flex items-center gap-3">
             <Logo size={48} />
             <span className="font-display text-2xl font-extrabold tracking-tight" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>SCA PORTAL</span>
           </div>
-          <div>
+          <div className="stagger-in" style={{ animationDelay: "80ms" }}>
             <h1 className="font-display text-4xl font-extrabold leading-tight tracking-tight lg:text-5xl" style={{ textShadow: "0 2px 10px rgba(0,0,0,0.65)" }}>
               Portal Terpadu Percetakan SCA
             </h1>
@@ -53,8 +54,9 @@ export default function Login() {
         </div>
       </div>
 
-      <div className="flex items-center justify-center bg-background p-6">
-        <div className="w-full max-w-sm">
+      <div className="relative flex items-center justify-center bg-background p-6">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_50%_at_50%_0%,hsl(var(--primary)/0.07),transparent_70%)]" />
+        <div className="stagger-in relative w-full max-w-sm">
           <div className="mb-8 flex items-center gap-3 lg:hidden">
             <Logo size={40} />
             <span className="font-display text-xl font-extrabold tracking-tight">SCA PORTAL</span>
@@ -88,8 +90,11 @@ export default function Login() {
               <Input id="password" type="password" data-testid="login-password" value={password}
                 onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
             </div>
-            <Button type="submit" className="w-full gap-2" data-testid="login-submit" disabled={loading}>
-              <LogIn className="h-4 w-4" /> {loading ? "Memproses…" : "Masuk"}
+            <Button type="submit" className="w-full gap-2 group" data-testid="login-submit" disabled={loading}>
+              {loading
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : <LogIn className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />}
+              {loading ? "Memproses…" : "Masuk"}
             </Button>
           </form>
         </div>
