@@ -8,6 +8,7 @@ import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { formatRupiah, formatNumber, formatDateID, TRX_LABEL } from "@/lib/format";
 import StatCard from "@/components/StatCard";
+import PageContainer from "@/components/layout/PageContainer";
 import ChartBox from "@/components/ChartBox";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,20 +37,16 @@ export default function Dashboard() {
     api.get("/dashboard").then((r) => setData(r.data)).catch(() => {});
   }, []);
 
-  if (!data) return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-28 w-full" />)}
-    </div>
-  );
+  if (!data) return <PageContainer isLoading testid="stok-dashboard-loading" />;
 
   const isSuper = user?.role === "superadmin";
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-3xl font-extrabold tracking-tight">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">Ringkasan stok & aktivitas mutasi tahun {data.year}.</p>
-      </div>
+    <PageContainer
+      testid="stok-dashboard-page"
+      pageTitle="Dashboard"
+      pageDescription={`Ringkasan stok & aktivitas mutasi tahun ${data.year}.`}
+    >
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard testid="card-total-paper" icon={FileStack} accent="primary" label="Total Stok Kertas"
@@ -135,6 +132,6 @@ export default function Dashboard() {
           </Link>
         </Card>
       </div>
-    </div>
+    </PageContainer>
   );
 }

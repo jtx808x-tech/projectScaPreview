@@ -156,8 +156,13 @@ export async function computeDetail(startIn, endIn) {
   const nominalInk = round(sum(Object.values(iStocks).map((v) => v.nominal)), 2);
   const nominalOther = round(sum(Object.values(oStocks).map((v) => v.nominal)), 2);
 
+  // Nama komposisi dibuat UNIK: satu jenis kertas bisa punya beberapa gramatur/
+  // ukuran, kalau namanya sama grafik jadi ambigu (dan React duplicate key).
   const paperComposition = Object.values(pStocks).filter((v) => v.nominal > 0)
-    .map((v) => ({ name: v.jenis_kertas, value: v.nominal }));
+    .map((v) => ({
+      name: [v.jenis_kertas, v.gramatur ? `${v.gramatur}gr` : null].filter(Boolean).join(" "),
+      value: v.nominal,
+    }));
   const inkComposition = Object.values(iStocks).filter((v) => v.nominal > 0)
     .map((v) => ({ name: v.jenis_tinta, value: v.nominal }));
   const otherComposition = Object.values(oStocks).filter((v) => v.nominal > 0)

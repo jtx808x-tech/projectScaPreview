@@ -12,7 +12,11 @@ echo "== 1. health =="
 curl -s $B/health | grep -q '"ok"' && ok health || ko health "no ok"
 
 echo "== 2. login superadmin =="
-LOGIN=$(curl -s -X POST $B/auth/login -H 'Content-Type: application/json' -d '{"username":"Jeffsca","password":"jeff3131"}')
+# Kredensial dibaca dari environment (jangan hardcode di repo).
+SU_USER="${SUPERADMIN_USERNAME:-admin}"
+SU_PASS="${SUPERADMIN_PASSWORD:-}"
+LOGIN=$(curl -s -X POST $B/auth/login -H 'Content-Type: application/json' \
+  -d "{\"username\":\"$SU_USER\",\"password\":\"$SU_PASS\",\"role\":\"superadmin\"}")
 TOKEN=$(echo "$LOGIN" | j '["token"]')
 [ -n "$TOKEN" ] && ok "login superadmin" || ko "login superadmin" "$LOGIN"
 AUTH="Authorization: Bearer $TOKEN"

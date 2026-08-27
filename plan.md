@@ -111,3 +111,48 @@
 - **HPP berfungsi**: kalkulasi, simpan/load, export PDF.
 - **Regresi stok nol**: semua fitur SCA-Stock existing tetap PASS.
 - **Deploy Vercel**: build sukses, runtime API stabil, env documented.
+
+---
+
+## Status Lanjutan — 27 Agustus 2026
+
+### Fase A — Live preview (SELESAI)
+- Repo `ClientSca7452/ClientscaStock` dipasang ke `/app`, dependencies terinstall, service jalan
+- Terhubung ke MongoDB Atlas asli; login superadmin & seluruh menu berfungsi
+
+### Fase B — Perbaikan & PR #7 di repo lama (SELESAI, sudah merged)
+- `devIndicators:false`, `ChartBox`, header sidebar "Kalkulator"
+- `tests/verify_flagged.py` — 27/27 PASS (PO stages, delivery flow + reschedule, check-conflict, HPP PDF, auth negatif)
+
+### Fase C — UI Polish 21st.dev + Font Geist (SELESAI)
+- Geist Sans/Mono via next/font, angka tabel tabular-nums
+- `ui/chart.jsx`, gradient area chart, donut + total tengah, rounded bar
+- `ui/empty.jsx`, skeleton shimmer, stepper PO bergaris, glass dialog/popover
+- Bug fix: `TRX_LABEL` (badge Transaksi kosong)
+
+### Fase D — Refactor pola shadcn dashboard starter (SELESAI)
+- `PageContainer` + `Heading` di 10 halaman, `Breadcrumbs`, Command Palette Ctrl+K,
+  `NavUser`, `TablePagination`, `TableViewOptions`, `AppSkeleton`, `Kbd`/`Spinner`/`LoadingButton`
+- Bug fix: komposisi laporan detail unik (duplicate key), CommandDialog a11y
+
+### Fase E — Data demo (SELESAI)
+- `tests/seed_dummy.py` (opsi `--wipe`, `--pos-only`)
+- Terisi: 56 mutasi kertas + 45 tinta + 41 lain, 12 PO (progres & skenario kirim beragam),
+  24 jadwal, 6 perhitungan HPP `[DEMO]`. Data asli user (4 mutasi kertas) dipertahankan
+
+### Fase F — Regression test (SELESAI, iteration_5.json)
+- Backend 65/70 (0 bug aplikasi; 5 kegagalan = urutan test agent), Frontend 100%
+- Terkonfirmasi hilang: warning Recharts, React duplicate key, error DialogTitle
+- Gating diverifikasi manual: admin tanpa header → 403, dengan `X-Section-Password` → 200,
+  `/api/hpp/**` untuk admin → 403, password section salah → 403
+
+### Fase G — Repo baru (SELESAI)
+- `jtx808x-tech/projectScaPreview` — PR #1 **sudah di-merge** ke `main` (54 file, +2546/-297)
+- Kredensial hardcoded di `tests/test_core.sh` dipindah ke environment
+
+### Sisa pekerjaan / catatan
+- [ ] Token Cloudflare R2 masih **READ-only** → upload foto bukti tahap PO belum bisa dipakai.
+      Perlu regenerate dengan permission **Object Read & Write**
+- [ ] `src/server/init.js` masih punya fallback password superadmin hardcoded (kode lama)
+- [ ] Data dummy bisa dihapus kapan saja: `python3 tests/seed_dummy.py --wipe`
+- [ ] Rotasi (ganti) GitHub PAT, password Atlas, dan key R2 karena pernah dikirim via chat

@@ -18,6 +18,9 @@ import {
 } from "@/components/ui/table";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
 import TableSkeleton from "@/components/TableSkeleton";
+import PageContainer from "@/components/layout/PageContainer";
+import TableViewOptions from "@/components/TableViewOptions";
+import TablePagination from "@/components/TablePagination";
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel,
@@ -46,6 +49,9 @@ export default function MutationsPage({ type }) {
   const [editData, setEditData] = useState(null);
   const [delId, setDelId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [hidden, setHidden] = useState({});
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const base = `/${type}`;
   const nameOf = (m) => isPaper ? m.jenis_kertas : isOther ? m.nama_barang : m.jenis_tinta;
@@ -111,25 +117,52 @@ export default function MutationsPage({ type }) {
     } catch (e) { toast.error(apiError(e, "Gagal mengunduh PDF")); }
   };
 
+  useEffect(() => { setPage(1); }, [search, fJenis, fTrx, fSupplier, period, pageSize]);
+
   const refLabel = (id) => {
     const r = rowById[id];
     return r?.kode ? r.kode : "#" + (id || "").slice(0, 6);
   };
 
-  const colCount = isPaper ? 13 : isOther ? 12 : 11;
+  // Kolom yang bisa disembunyikan (pola data-table-view-options dashboard starter).
+  const columnDefs = [
+    { id: "date", label: "Tanggal" },
+    { id: "kode", label: "Kode" },
+    { id: "nama", label: isPaper ? "Jenis Kertas" : isOther ? "Nama Barang" : "Jenis Tinta" },
+    ...(isPaper ? [{ id: "gram", label: "Gram" }, { id: "ukuran", label: "Ukuran" }] : []),
+    ...(isOther ? [{ id: "satuan", label: "Satuan" }] : []),
+    { id: "trx", label: "Transaksi" },
+    { id: "jumlah", label: "Jumlah" },
+    { id: "supplier", label: "Supplier" },
+    { id: "pic", label: "PIC" },
+    { id: "harga", label: "Harga" },
+    { id: "ppn", label: "PPN" },
+    { id: "aksi", label: "Aksi" },
+  ];
+  const visible = Object.fromEntries(columnDefs.map((c) => [c.id, hidden[c.id] !== true]));
+  const show = (id) => visible[id] !== false;
+  const toggleCol = (id, next) => setHidden((h) => ({ ...h, [id]: !next }));
+  const colCount = columnDefs.filter((c) => show(c.id)).length;
+
+  // Pagination sisi klien.
+  const total = rows.length;
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(page, pageCount);
+  const pagedRows = rows.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display text-3xl font-extrabold tracking-tight">Mutasi {TITLES[type]}</h1>
-          <p className="text-sm text-muted-foreground">Input & riwayat transaksi Masuk / Keluar / Retur.</p>
-        </div>
-        <div className="flex gap-2">
+    <PageContainer
+      testid={`mutations-page-${type}`}
+      pageTitle={`Mutasi ${TITLES[type]}`}
+      pageDescription="Input & riwayat transaksi Masuk / Keluar / Retur."
+      pageHeaderAction={(
+        <>
+          <TableViewOptions columns={columnDefs} visible={visible} onToggle={toggleCol} />
           <Button variant="outline" className="gap-2" data-testid="download-pdf-button" onClick={doDownload}><FileDown className="h-4 w-4" /> PDF</Button>
           <Button className="gap-2" data-testid="add-mutation-button" onClick={openAdd}><Plus className="h-4 w-4" /> Tambah Mutasi</Button>
-        </div>
-      </div>
+        </>
+      )}
+    >
 
       <Card className="p-4">
         <div className="flex flex-wrap items-end gap-3">
@@ -178,18 +211,19 @@ export default function MutationsPage({ type }) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Tanggal</TableHead>
-                <TableHead>Kode</TableHead>
-                <TableHead>{isPaper ? "Jenis Kertas" : isOther ? "Nama Barang" : "Jenis Tinta"}</TableHead>
-                {isPaper && <><TableHead>Gram</TableHead><TableHead>Ukuran</TableHead></>}
-                {isOther && <TableHead>Satuan</TableHead>}
-                <TableHead>Transaksi</TableHead>
-                <TableHead className="text-right">Jumlah</TableHead>
-                <TableHead>Supplier</TableHead>
-                <TableHead>PIC</TableHead>
-                <TableHead className="text-right">Harga</TableHead>
-                <TableHead className="text-right">PPN</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
+                {show("date") && <TableHead>Tanggal</TableHead>}
+                {show("kode") && <TableHead>Kode</TableHead>}
+                {show("nama") && <TableHead>{isPaper ? "Jenis Kertas" : isOther ? "Nama Barang" : "Jenis Tinta"}</TableHead>}
+                {isPaper && show("gram") && <TableHead>Gram</TableHead>}
+                {isPaper && show("ukuran") && <TableHead>Ukuran</TableHead>}
+                {isOther && show("satuan") && <TableHead>Satuan</TableHead>}
+                {show("trx") && <TableHead>Transaksi</TableHead>}
+                {show("jumlah") && <TableHead className="text-right">Jumlah</TableHead>}
+                {show("supplier") && <TableHead>Supplier</TableHead>}
+                {show("pic") && <TableHead>PIC</TableHead>}
+                {show("harga") && <TableHead className="text-right">Harga</TableHead>}
+                {show("ppn") && <TableHead className="text-right">PPN</TableHead>}
+                {show("aksi") && <TableHead className="text-right">Aksi</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody data-testid="mutations-table-body">
@@ -206,42 +240,58 @@ export default function MutationsPage({ type }) {
                   </TableCell>
                 </TableRow>
               )}
-              {rows.map((m) => (
+              {pagedRows.map((m) => (
                 <TableRow key={m.id} className="stagger-in">
-                  <TableCell className="whitespace-nowrap">{formatDateID(m.date)}</TableCell>
-                  <TableCell className="font-mono text-xs">{m.kode || "-"}</TableCell>
-                  <TableCell className="font-medium">
-                    {nameOf(m)}
-                    {m.ref_mutation_id && (
-                      <span className="ml-1 inline-flex items-center gap-1 rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] text-amber-600">
-                        <Link2 className="h-3 w-3" /> Retur dari {refLabel(m.ref_mutation_id)}
-                      </span>
-                    )}
-                  </TableCell>
-                  {isPaper && <><TableCell>{formatNumber(m.gramatur)}</TableCell><TableCell className="whitespace-nowrap">{formatNumber(m.panjang)}x{formatNumber(m.lebar)} cm</TableCell></>}
-                  {isOther && <TableCell>{m.satuan || "-"}</TableCell>}
-                  <TableCell>{trxBadge(m.jenis_transaksi)}</TableCell>
-                  <TableCell className="text-right font-semibold whitespace-nowrap">{formatNumber(m.jumlah)} {unitOf(m)}</TableCell>
-                  <TableCell>{m.supplier || "-"}</TableCell>
-                  <TableCell>{m.pic_name}</TableCell>
-                  <TableCell className="text-right whitespace-nowrap">
-                    {m.jenis_transaksi === "masuk" ? formatRupiah(priceOf(m)) : "-"}
-                    {isPaper && m.jenis_transaksi === "masuk" && m.price_mode && (
-                      <div className="font-sans text-[10px] text-muted-foreground">{{ per_rim: "per rim", per_kg: "per kg", total: "total" }[m.price_mode]}</div>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right whitespace-nowrap">{m.ppn_ada ? formatRupiah(m.ppn_nominal) : "-"}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button size="icon" variant="ghost" disabled={!canModify(m)} data-testid={`edit-${m.id}`} onClick={() => openEdit(m)}><Pencil className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="ghost" disabled={!canModify(m)} data-testid={`delete-${m.id}`} onClick={() => setDelId(m.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                    </div>
-                  </TableCell>
+                  {show("date") && <TableCell className="whitespace-nowrap">{formatDateID(m.date)}</TableCell>}
+                  {show("kode") && <TableCell className="code-chip text-xs">{m.kode || "-"}</TableCell>}
+                  {show("nama") && (
+                    <TableCell className="font-medium">
+                      {nameOf(m)}
+                      {m.ref_mutation_id && (
+                        <span className="ml-1 inline-flex items-center gap-1 rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] text-amber-600">
+                          <Link2 className="h-3 w-3" /> Retur dari {refLabel(m.ref_mutation_id)}
+                        </span>
+                      )}
+                    </TableCell>
+                  )}
+                  {isPaper && show("gram") && <TableCell>{formatNumber(m.gramatur)}</TableCell>}
+                  {isPaper && show("ukuran") && <TableCell className="whitespace-nowrap">{formatNumber(m.panjang)}x{formatNumber(m.lebar)} cm</TableCell>}
+                  {isOther && show("satuan") && <TableCell>{m.satuan || "-"}</TableCell>}
+                  {show("trx") && <TableCell>{trxBadge(m.jenis_transaksi)}</TableCell>}
+                  {show("jumlah") && <TableCell className="whitespace-nowrap text-right font-semibold">{formatNumber(m.jumlah)} {unitOf(m)}</TableCell>}
+                  {show("supplier") && <TableCell>{m.supplier || "-"}</TableCell>}
+                  {show("pic") && <TableCell>{m.pic_name}</TableCell>}
+                  {show("harga") && (
+                    <TableCell className="whitespace-nowrap text-right">
+                      {m.jenis_transaksi === "masuk" ? formatRupiah(priceOf(m)) : "-"}
+                      {isPaper && m.jenis_transaksi === "masuk" && m.price_mode && (
+                        <div className="font-sans text-[10px] text-muted-foreground">{{ per_rim: "per rim", per_kg: "per kg", total: "total" }[m.price_mode]}</div>
+                      )}
+                    </TableCell>
+                  )}
+                  {show("ppn") && <TableCell className="whitespace-nowrap text-right">{m.ppn_ada ? formatRupiah(m.ppn_nominal) : "-"}</TableCell>}
+                  {show("aksi") && (
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button size="icon" variant="ghost" disabled={!canModify(m)} data-testid={`edit-${m.id}`} onClick={() => openEdit(m)}><Pencil className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" disabled={!canModify(m)} data-testid={`delete-${m.id}`} onClick={() => setDelId(m.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                      </div>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </div>
+        )}
+        {!loading && total > 0 && (
+          <TablePagination
+            page={safePage}
+            pageSize={pageSize}
+            total={total}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
         )}
       </Card>
 
@@ -260,6 +310,6 @@ export default function MutationsPage({ type }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </PageContainer>
   );
 }

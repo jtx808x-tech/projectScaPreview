@@ -14,6 +14,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
+import PageContainer from "@/components/layout/PageContainer";
 
 export default function StockReport() {
   const [data, setData] = useState(null);
@@ -66,12 +67,11 @@ export default function StockReport() {
   };
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display text-3xl font-extrabold tracking-tight">Laporan Stok Ringkas</h1>
-          <p className="text-sm text-muted-foreground">Rekap stok saat ini (tanpa nominal) — tahun {data?.year || ""}.</p>
-        </div>
+    <PageContainer
+      testid="stock-report-page"
+      pageTitle="Laporan Stok Ringkas"
+      pageDescription={`Rekap stok saat ini (tanpa nominal) — tahun ${data?.year || ""}.`}
+      pageHeaderAction={(
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" className="gap-2" data-testid="pdf-paper-mutations" onClick={() => dl("/pdf/paper-mutations", "laporan-mutasi-kertas.pdf")}>
             <FileDown className="h-4 w-4" /> Mutasi Kertas
@@ -86,7 +86,8 @@ export default function StockReport() {
             <FileDown className="h-4 w-4" /> Stok Ringkas
           </Button>
         </div>
-      </div>
+      )}
+    >
 
       <Card className="p-4">
         <div className="flex flex-wrap items-end gap-4">
@@ -189,6 +190,6 @@ export default function StockReport() {
           </Table>
         </div>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

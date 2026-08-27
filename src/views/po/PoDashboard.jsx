@@ -5,6 +5,7 @@ import { useLang } from "@/context/LangContext";
 import { BUCKET_META } from "@/lib/poStages";
 import * as api from "@/lib/poApi";
 import { Card } from "@/components/ui/card";
+import PageContainer from "@/components/layout/PageContainer";
 
 const ORDER = [
   "waiting_1", "waiting_2", "waiting_3",
@@ -29,12 +30,11 @@ export default function PoDashboard() {
   ];
 
   return (
-    <div className="space-y-6" data-testid="po-dashboard-page">
-      <div>
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">SCA — PO TRACKER</p>
-        <h1 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight mt-1">{t("overview")}</h1>
-        <p className="text-muted-foreground mt-2">{t("tapToFilter")}</p>
-      </div>
+    <PageContainer
+      testid="po-dashboard-page"
+      pageTitle={t("overview")}
+      pageDescription={t("tapToFilter")}
+    >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {topCards.map((c, i) => (
           <Card key={c.label} data-testid={`po-summary-${c.bucket || "total"}`} onClick={() => goto(c.bucket)}
@@ -75,6 +75,6 @@ export default function PoDashboard() {
           })}
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }

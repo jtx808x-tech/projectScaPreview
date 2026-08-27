@@ -20,6 +20,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
+import PageContainer from "@/components/layout/PageContainer";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
 } from "@/components/ui/dialog";
@@ -74,11 +75,11 @@ function Inner() {
   };
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="font-display text-3xl font-extrabold tracking-tight">Log & Manajemen User</h1>
-        <p className="text-sm text-muted-foreground">Aktivitas login, audit mutasi, dan pengelolaan user.</p>
-      </div>
+    <PageContainer
+      testid="logs-users-page"
+      pageTitle="Log & Manajemen User"
+      pageDescription="Aktivitas login, audit mutasi, dan pengelolaan user."
+    >
 
       <Tabs defaultValue="activity">
         <TabsList className="flex-wrap">
@@ -224,7 +225,7 @@ function Inner() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </PageContainer>
   );
 }
 

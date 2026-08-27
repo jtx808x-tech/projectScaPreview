@@ -23,17 +23,18 @@ import PoList from "@/views/po/PoList";
 import PoForm from "@/views/po/PoForm";
 import PoDetail from "@/views/po/PoDetail";
 import PoCalendar from "@/views/po/PoCalendar";
+import AppSkeleton from "@/components/AppSkeleton";
 
 function Protected({ children }) {
   const { user } = useAuth();
-  if (user === undefined) return <div className="flex h-screen items-center justify-center text-muted-foreground">Memuat…</div>;
+  if (user === undefined) return <AppSkeleton />;
   if (!user) return <Navigate to="/login" replace />;
   return children;
 }
 
 function RequireSuper({ children }) {
   const { user } = useAuth();
-  if (user === undefined) return <div className="flex h-screen items-center justify-center text-muted-foreground">Memuat…</div>;
+  if (user === undefined) return <AppSkeleton />;
   if (!user) return <Navigate to="/login" replace />;
   if (user.role !== "superadmin") return <Navigate to="/stok" replace />;
   return children;

@@ -23,6 +23,8 @@ class StokSCAAPITester:
         self.ink_mutation_ids = []
         self.other_mutation_ids = []
         self.user_ids = []
+        self.po_ids = []
+        self.hpp_ids = []
 
     def run_test(self, name, method, endpoint, expected_status, data=None, headers=None, params=None):
         """Run a single API test"""
@@ -111,6 +113,39 @@ class StokSCAAPITester:
             "auth/login",
             401,
             data={"username": "Jeffsca", "password": "wrongpassword", "role": "superadmin"}
+        )
+        return success
+
+    def test_login_role_mismatch_superadmin_as_admin(self):
+        """Test superadmin choosing admin role (should fail)"""
+        success, response = self.run_test(
+            "Login Role Mismatch: Superadmin as Admin (should 401)",
+            "POST",
+            "auth/login",
+            401,
+            data={"username": "Jeffsca", "password": "jeff3131", "role": "admin"}
+        )
+        return success
+
+    def test_login_role_mismatch_admin_as_superadmin(self):
+        """Test admin choosing superadmin role (should fail)"""
+        success, response = self.run_test(
+            "Login Role Mismatch: Admin as Superadmin (should 401)",
+            "POST",
+            "auth/login",
+            401,
+            data={"username": "adminpic", "password": "admin1234", "role": "superadmin"}
+        )
+        return success
+
+    def test_login_missing_role(self):
+        """Test login without role field (should fail)"""
+        success, response = self.run_test(
+            "Login Missing Role (should 400)",
+            "POST",
+            "auth/login",
+            400,
+            data={"username": "Jeffsca", "password": "jeff3131"}
         )
         return success
 
@@ -582,7 +617,7 @@ class StokSCAAPITester:
             "reports/detail",
             200,
             params={"start": f"{self.year}-01-01", "end": f"{self.year}-12-31"},
-            headers={"X-Section-Password": "superadminsementara"}
+            headers={"X-Section-Password": "ScaBuka2026"}
         )
         
         self.token = old_token
@@ -602,7 +637,7 @@ class StokSCAAPITester:
             "POST",
             "auth/verify-temp-password",
             200,
-            data={"password": "superadminsementara"}
+            data={"password": "ScaBuka2026"}
         )
         
         self.token = old_token
@@ -720,10 +755,406 @@ class StokSCAAPITester:
             "POST",
             "settings/temp-password",
             200,
-            data={"new_password": "superadminsementara"}
+            data={"new_password": "ScaBuka2026"}
         )
         
         return success1 and success2
+
+    # ==================== PO TRACKER TESTS ====================
+    
+    def test_po_create(self):
+        """Test creating PO"""
+        data = {
+            "po_number": f"TEST-PO-{datetime.now().strftime('%Y%m%d%H%M%S')}",
+            "client_name": "PT Test Client",
+            "item_type": "Box Test",
+            "material": "Ivory 250gr",
+            "paper_size": "65x100",
+            "quantity": "5000",
+            "po_date": f"{self.year}-08-01",
+            "est_start": f"{self.year}-08-05",
+            "est_end": f"{self.year}-08-15",
+            "print_machine": "OLIVER 58",
+            "enabled_stages": [1, 2, 3, 6, 11],
+            "notes": "Test PO for regression testing"
+        }
+        success, response = self.run_test(
+            "Create PO",
+            "POST",
+            "po/pos",
+            200,
+            data=data
+        )
+        if success and 'id' in response:
+            self.po_ids.append(response['id'])
+            print(f"   Created PO ID: {response['id']}")
+            print(f"   PO Number: {response.get('po_number')}")
+        return success
+
+    def test_po_list(self):
+        """Test listing POs"""
+        success, response = self.run_test(
+            "List POs",
+            "GET",
+            "po/pos",
+            200
+        )
+        if success:
+            print(f"   Total POs: {len(response)}")
+        return success
+
+    def test_po_dashboard(self):
+        """Test PO dashboard"""
+        success, response = self.run_test(
+            "PO Dashboard",
+            "GET",
+            "po/dashboard",
+            200
+        )
+        if success:
+            print(f"   Total POs: {response.get('total')}")
+            print(f"   Active: {response.get('total_active')}")
+            print(f"   Completed: {response.get('total_completed')}")
+        return success
+
+    def test_po_stage_update(self):
+        """Test updating PO stage"""
+        if not self.po_ids:
+            print("   ⚠️  Skipping - no PO created")
+            return False
+            
+        po_id = self.po_ids[0]
+        # Stage 1: paper arrived
+        success, response = self.run_test(
+            "Update PO Stage 1 (paper arrived)",
+            "POST",
+            f"po/pos/{po_id}/stages/1",
+            200,
+            data={"data": {"paper_arrived": True, "needs_single_face": False}}
+        )
+        if success:
+            print(f"   Current stage: {response.get('computed', {}).get('current_stage')}")
+        return success
+
+    def test_po_stage_2_3(self):
+        """Test updating PO stages 2 and 3"""
+        if not self.po_ids:
+            print("   ⚠️  Skipping - no PO created")
+            return False
+            
+        po_id = self.po_ids[0]
+        success1, _ = self.run_test(
+            "Update PO Stage 2 (ink arrived)",
+            "POST",
+            f"po/pos/{po_id}/stages/2",
+            200,
+            data={"data": {"arrived": True}}
+        )
+        success2, _ = self.run_test(
+            "Update PO Stage 3 (die arrived)",
+            "POST",
+            f"po/pos/{po_id}/stages/3",
+            200,
+            data={"data": {"arrived": True}}
+        )
+        return success1 and success2
+
+    def test_po_stage_6_finishing(self):
+        """Test updating PO stage 6 with multiple finishing"""
+        if not self.po_ids:
+            print("   ⚠️  Skipping - no PO created")
+            return False
+            
+        po_id = self.po_ids[0]
+        success, response = self.run_test(
+            "Update PO Stage 6 (finishing)",
+            "POST",
+            f"po/pos/{po_id}/stages/6",
+            200,
+            data={"data": {"finishing": ["laminasi_glossy", "uv_spot"], "done": True}}
+        )
+        if success:
+            stage_data = response.get('stage_data', {}).get('6', {})
+            print(f"   Finishing options: {stage_data.get('finishing')}")
+        return success
+
+    def test_po_delivery_flow(self):
+        """Test PO delivery flow (stage 11)"""
+        if not self.po_ids:
+            print("   ⚠️  Skipping - no PO created")
+            return False
+            
+        po_id = self.po_ids[0]
+        
+        # Mark print completed
+        success1, _ = self.run_test(
+            "PO Stage 11: Print Completed",
+            "POST",
+            f"po/pos/{po_id}/stages/11",
+            200,
+            data={"data": {"print_completed": True}}
+        )
+        
+        # Schedule delivery
+        success2, _ = self.run_test(
+            "PO Delivery: Schedule",
+            "POST",
+            f"po/pos/{po_id}/delivery/schedule",
+            200,
+            data={"scheduled_date": f"{self.year}-08-20", "driver_name": "Budi Test"}
+        )
+        
+        # Mark delivery success
+        success3, response = self.run_test(
+            "PO Delivery: Result Success",
+            "POST",
+            f"po/pos/{po_id}/delivery/result",
+            200,
+            data={"status": "success"}
+        )
+        
+        if success3:
+            print(f"   PO Completed: {response.get('computed', {}).get('is_completed')}")
+        
+        return success1 and success2 and success3
+
+    def test_po_check_conflict(self):
+        """Test PO conflict checking"""
+        success, response = self.run_test(
+            "PO Check Conflict",
+            "POST",
+            "po/pos/check-conflict",
+            200,
+            data={
+                "est_start": f"{self.year}-08-10",
+                "est_end": f"{self.year}-08-12"
+            }
+        )
+        if success:
+            print(f"   Conflicts found: {len(response.get('conflicts', []))}")
+        return success
+
+    def test_po_schedules_create(self):
+        """Test creating PO schedule"""
+        if not self.po_ids:
+            print("   ⚠️  Skipping - no PO created")
+            return False
+            
+        po_id = self.po_ids[0]
+        success, response = self.run_test(
+            "Create PO Schedule",
+            "POST",
+            "po/schedules",
+            200,
+            data={
+                "po_id": po_id,
+                "stage_number": 4,
+                "date": f"{self.year}-08-08",
+                "note": "Test schedule"
+            }
+        )
+        return success
+
+    def test_po_schedules_list(self):
+        """Test listing PO schedules"""
+        success, response = self.run_test(
+            "List PO Schedules",
+            "GET",
+            "po/schedules",
+            200
+        )
+        if success:
+            print(f"   Total schedules: {len(response)}")
+        return success
+
+    def test_po_pdf_export(self):
+        """Test PO PDF export"""
+        success, response = self.run_test(
+            "PO PDF Export",
+            "GET",
+            "po/pos/export/pdf",
+            200
+        )
+        return success
+
+    # ==================== HPP CALCULATOR TESTS ====================
+    
+    def test_hpp_create(self):
+        """Test creating HPP calculation"""
+        data = {
+            "name": f"TEST HPP {datetime.now().strftime('%H%M%S')}",
+            "customer": "PT Test Customer",
+            "notes": "Test HPP calculation",
+            "inputs": {
+                "kertas": {"bahan": "Ivory", "gramatur": "250 Gr", "qtyOrder": "5000"},
+                "enabled": {"kertas": True}
+            },
+            "result": {
+                "subtotal": 5000000,
+                "subtotalPerPcs": 1000,
+                "laba": 750000,
+                "bunga": 50000,
+                "dpp": 5800000,
+                "ppn": 638000,
+                "total": 6438000,
+                "hargaJualPerPcs": 1287.6,
+                "qtyOrder": 5000
+            }
+        }
+        success, response = self.run_test(
+            "Create HPP Calculation",
+            "POST",
+            "hpp/calculations",
+            200,
+            data=data
+        )
+        if success and 'id' in response:
+            self.hpp_ids.append(response['id'])
+            print(f"   Created HPP ID: {response['id']}")
+        return success
+
+    def test_hpp_list(self):
+        """Test listing HPP calculations"""
+        success, response = self.run_test(
+            "List HPP Calculations",
+            "GET",
+            "hpp/calculations",
+            200
+        )
+        if success:
+            print(f"   Total HPP calculations: {len(response)}")
+        return success
+
+    def test_hpp_get_by_id(self):
+        """Test getting HPP calculation by ID"""
+        if not self.hpp_ids:
+            print("   ⚠️  Skipping - no HPP created")
+            return False
+            
+        hpp_id = self.hpp_ids[0]
+        success, response = self.run_test(
+            "Get HPP Calculation by ID",
+            "GET",
+            f"hpp/calculations/{hpp_id}",
+            200
+        )
+        if success:
+            print(f"   HPP Name: {response.get('name')}")
+            print(f"   Customer: {response.get('customer')}")
+        return success
+
+    def test_hpp_update(self):
+        """Test updating HPP calculation"""
+        if not self.hpp_ids:
+            print("   ⚠️  Skipping - no HPP created")
+            return False
+            
+        hpp_id = self.hpp_ids[0]
+        data = {
+            "name": f"TEST HPP UPDATED {datetime.now().strftime('%H%M%S')}",
+            "customer": "PT Test Customer Updated",
+            "notes": "Updated test HPP",
+            "inputs": {
+                "kertas": {"bahan": "Ivory", "gramatur": "250 Gr", "qtyOrder": "6000"},
+                "enabled": {"kertas": True}
+            },
+            "result": {
+                "subtotal": 6000000,
+                "subtotalPerPcs": 1000,
+                "laba": 900000,
+                "bunga": 60000,
+                "dpp": 6960000,
+                "ppn": 765600,
+                "total": 7725600,
+                "hargaJualPerPcs": 1287.6,
+                "qtyOrder": 6000
+            }
+        }
+        success, response = self.run_test(
+            "Update HPP Calculation",
+            "PUT",
+            f"hpp/calculations/{hpp_id}",
+            200,
+            data=data
+        )
+        return success
+
+    def test_hpp_pdf(self):
+        """Test HPP PDF generation"""
+        data = {
+            "name": "Test HPP PDF",
+            "customer": "PT Test",
+            "result": {
+                "total": 5000000,
+                "subtotalPerPcs": 1000,
+                "hargaJualPerPcs": 1200
+            }
+        }
+        success, response = self.run_test(
+            "HPP PDF Generation",
+            "POST",
+            "hpp/pdf",
+            200,
+            data=data
+        )
+        return success
+
+    def test_admin_hpp_forbidden(self):
+        """Test that admin role cannot access HPP endpoints"""
+        if not self.admin_token:
+            print("   ⚠️  Skipping - no admin token")
+            return False
+            
+        old_token = self.token
+        self.token = self.admin_token
+        
+        success1, _ = self.run_test(
+            "Admin access HPP list (should 403)",
+            "GET",
+            "hpp/calculations",
+            403
+        )
+        
+        success2, _ = self.run_test(
+            "Admin create HPP (should 403)",
+            "POST",
+            "hpp/calculations",
+            403,
+            data={"name": "Test", "customer": "Test"}
+        )
+        
+        self.token = old_token
+        return success1 and success2
+
+    def test_delete_hpp(self):
+        """Test deleting HPP calculation"""
+        if not self.hpp_ids:
+            print("   ⚠️  Skipping - no HPP to delete")
+            return False
+            
+        hpp_id = self.hpp_ids[0]
+        success, response = self.run_test(
+            "Delete HPP Calculation",
+            "DELETE",
+            f"hpp/calculations/{hpp_id}",
+            200
+        )
+        return success
+
+    def test_delete_po(self):
+        """Test deleting PO"""
+        if not self.po_ids:
+            print("   ⚠️  Skipping - no PO to delete")
+            return False
+            
+        po_id = self.po_ids[0]
+        success, response = self.run_test(
+            "Delete PO",
+            "DELETE",
+            f"po/pos/{po_id}",
+            200
+        )
+        return success
 
     def test_pdf_endpoints(self):
         """Test all PDF generation endpoints"""
@@ -777,6 +1208,9 @@ class StokSCAAPITester:
         self.test_health()
         self.test_login_superadmin()
         self.test_login_invalid()
+        self.test_login_role_mismatch_superadmin_as_admin()
+        self.test_login_role_mismatch_admin_as_superadmin()
+        self.test_login_missing_role()
         self.test_auth_me()
         self.test_auth_guard_no_token()
         
@@ -860,15 +1294,49 @@ class StokSCAAPITester:
         print("=" * 80)
         self.test_change_temp_password()
         
-        # 12. PDF Generation
+        # 12. PO Tracker
         print("\n" + "=" * 80)
-        print("SECTION 12: PDF GENERATION")
+        print("SECTION 12: PO TRACKER")
+        print("=" * 80)
+        self.test_po_create()
+        self.test_po_list()
+        self.test_po_dashboard()
+        self.test_po_stage_update()
+        self.test_po_stage_2_3()
+        self.test_po_stage_6_finishing()
+        self.test_po_delivery_flow()
+        self.test_po_check_conflict()
+        self.test_po_schedules_create()
+        self.test_po_schedules_list()
+        self.test_po_pdf_export()
+        
+        # 13. HPP Calculator
+        print("\n" + "=" * 80)
+        print("SECTION 13: HPP CALCULATOR")
+        print("=" * 80)
+        self.test_hpp_create()
+        self.test_hpp_list()
+        self.test_hpp_get_by_id()
+        self.test_hpp_update()
+        self.test_hpp_pdf()
+        self.test_admin_hpp_forbidden()
+        
+        # 14. PDF Generation
+        print("\n" + "=" * 80)
+        print("SECTION 14: PDF GENERATION")
         print("=" * 80)
         self.test_pdf_endpoints()
         
-        # 13. Logout
+        # 15. Cleanup
         print("\n" + "=" * 80)
-        print("SECTION 13: LOGOUT")
+        print("SECTION 15: CLEANUP")
+        print("=" * 80)
+        self.test_delete_hpp()
+        self.test_delete_po()
+        
+        # 16. Logout
+        print("\n" + "=" * 80)
+        print("SECTION 16: LOGOUT")
         print("=" * 80)
         self.test_logout()
         

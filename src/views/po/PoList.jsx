@@ -9,6 +9,7 @@ import { fmtDate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import PageContainer from "@/components/layout/PageContainer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyContent } from "@/components/ui/empty";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -84,9 +85,11 @@ export default function PoList() {
   };
 
   return (
-    <div className="space-y-6" data-testid="po-list-page">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <h1 className="font-display text-3xl font-extrabold tracking-tight">{t("poList")}</h1>
+    <PageContainer
+      testid="po-list-page"
+      pageTitle={t("poList")}
+      pageDescription="Kelola PO, pantau progres produksi, dan jadwal pengiriman."
+      pageHeaderAction={(
         <div className="flex items-center gap-2">
           <Button data-testid="po-export-pdf" onClick={downloadPdf} variant="outline" className="rounded-full gap-2">
             <FileDown className="h-4 w-4" /> {t("exportPdf")}
@@ -95,7 +98,8 @@ export default function PoList() {
             <Plus className="h-4 w-4" /> {t("newPO")}
           </Button>
         </div>
-      </div>
+      )}
+    >
 
       <div className="flex gap-3 flex-col sm:flex-row">
         <div className="relative flex-1">
@@ -201,6 +205,6 @@ export default function PoList() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </PageContainer>
   );
 }

@@ -12,6 +12,8 @@ import SectionGate from "@/components/SectionGate";
 import PeriodFilter from "@/components/PeriodFilter";
 import StatCard from "@/components/StatCard";
 import ChartBox from "@/components/ChartBox";
+import PageContainer from "@/components/layout/PageContainer";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +31,16 @@ import {
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
 
 const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"];
+
+/** Gabungkan entri dengan nama sama supaya legend & key chart tetap unik. */
+function mergeByName(list = []) {
+  const map = new Map();
+  list.forEach((it) => {
+    const key = it.name || "Lainnya";
+    map.set(key, (map.get(key) || 0) + (it.value || 0));
+  });
+  return [...map.entries()].map(([name, value]) => ({ name, value }));
+}
 
 const TREND_CONFIG = {
   paper_masuk: { label: "Kertas Masuk", color: "hsl(var(--chart-1))" },
@@ -96,12 +108,11 @@ function Inner() {
   const cmp = data?.comparison;
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display text-3xl font-extrabold tracking-tight">Laporan Detail</h1>
-          <p className="text-sm text-muted-foreground">Nominal, grafik, perbandingan periode & PPN. {period.label}</p>
-        </div>
+    <PageContainer
+      testid="detail-report-page"
+      pageTitle="Laporan Detail"
+      pageDescription={`Nominal, grafik, perbandingan periode & PPN. ${period.label}`}
+      pageHeaderAction={(
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" className="gap-2" data-testid="pdf-stock-nominal-button" onClick={() => openPdf("nominal")}>
             <FileDown className="h-4 w-4" /> Stok Keseluruhan
@@ -110,11 +121,22 @@ function Inner() {
             <FileDown className="h-4 w-4" /> PDF Detail
           </Button>
         </div>
-      </div>
+      )}
+    >
 
       <Card className="p-4"><PeriodFilter onChange={setPeriod} /></Card>
 
-      {!data ? <p className="text-muted-foreground">Memuat…</p> : (
+      {!data ? (
+        <div className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
+          </div>
+          <Skeleton className="h-40 w-full rounded-xl" />
+          <div className="grid gap-4 lg:grid-cols-3">
+            {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-72 w-full rounded-xl" />)}
+          </div>
+        </div>
+      ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard testid="detail-nominal-paper" icon={FileStack} accent="primary" label="Nominal Stok Kertas" value={formatRupiah(data.nominal_paper)} />
@@ -160,7 +182,9 @@ function Inner() {
 
           {/* Composition pies */}
           <div className="grid gap-4 lg:grid-cols-3">
-            {[["Komposisi Nominal Kertas", data.paper_composition], ["Komposisi Nominal Tinta", data.ink_composition], ["Komposisi Nominal Lain", data.other_composition || []]].map(([title, comp]) => (
+            {[["Komposisi Nominal Kertas", data.paper_composition], ["Komposisi Nominal Tinta", data.ink_composition], ["Komposisi Nominal Lain", data.other_composition || []]].map(([title, rawComp]) => {
+              const comp = mergeByName(rawComp);
+              return (
               <Card key={title} className="p-5">
                 <h3 className="mb-2 font-display text-lg font-bold">{title}</h3>
                 <ChartBox className="h-64">
@@ -182,7 +206,7 @@ function Inner() {
                           strokeWidth={2}
                           stroke="hsl(var(--card))"
                         >
-                          {comp.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                          {comp.map((c, i) => <Cell key={c.name} fill={COLORS[i % COLORS.length]} />)}
                           <RLabel
                             content={({ viewBox }) => {
                               if (!viewBox || !("cx" in viewBox)) return null;
@@ -210,7 +234,8 @@ function Inner() {
                   )}
                 </ChartBox>
               </Card>
-            ))}
+              );
+            })}
           </div>
 
           {/* Monthly trend + value */}
@@ -330,7 +355,7 @@ function Inner() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageContainer>
   );
 }
 

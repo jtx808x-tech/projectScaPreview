@@ -2,15 +2,19 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, FileStack, Droplets, Package, ClipboardList, BarChart3,
-  Users, CalendarX, LogOut, Menu, X, Lock, ShieldCheck, Calculator, Boxes,
-  ListTodo, CalendarDays, Globe,
+  Users, CalendarX, Menu, X, Lock, Calculator,
+  ListTodo, CalendarDays, Globe, Search,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { useLang } from "@/context/LangContext";
 import ThemeToggle from "@/components/ThemeToggle";
 import Logo from "@/components/Logo";
+import Breadcrumbs from "@/components/Breadcrumbs";
+import NavUser from "@/components/NavUser";
+import CommandPalette, { CommandPaletteTrigger, useCommandPalette } from "@/components/CommandPalette";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel,
@@ -26,6 +30,7 @@ export default function AppShell() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [warn, setWarn] = useState(false);
+  const { open: cmdOpen, setOpen: setCmdOpen } = useCommandPalette();
   const warnRef = useRef(null);
   const outRef = useRef(null);
 
@@ -112,17 +117,14 @@ export default function AppShell() {
           </>
         )}
       </nav>
-      <div className="border-t border-border p-4">
-        <div className="mb-3 flex items-center gap-2">
-          {isSuper ? <ShieldCheck className="h-4 w-4 text-primary" /> : <Users className="h-4 w-4 text-muted-foreground" />}
-          <div className="min-w-0">
-            <div className="truncate text-sm font-semibold">{user?.name}</div>
-            <div className="text-xs text-muted-foreground capitalize">{isSuper ? "Superadmin" : "Admin/PIC"}</div>
-          </div>
-        </div>
-        <Button variant="outline" className="w-full justify-start gap-2" data-testid="logout-button" onClick={() => doLogout("manual")}>
-          <LogOut className="h-4 w-4" /> Keluar
-        </Button>
+      <div className="border-t border-border p-3">
+        <NavUser
+          user={user}
+          isSuper={isSuper}
+          lang={lang}
+          setLang={setLang}
+          onLogout={() => doLogout("manual")}
+        />
       </div>
     </div>
   );
@@ -142,11 +144,22 @@ export default function AppShell() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-border bg-background/70 px-4 py-3 backdrop-blur-xl md:px-8">
-          <Button variant="outline" size="icon" className="md:hidden" data-testid="mobile-menu-button" onClick={() => setOpen((v) => !v)}>
-            {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-          </Button>
-          <div className="font-display text-sm font-semibold text-muted-foreground md:text-base">Sistem Terpadu SCA</div>
+          <div className="flex min-w-0 items-center gap-3">
+            <Button variant="outline" size="icon" className="md:hidden" data-testid="mobile-menu-button" onClick={() => setOpen((v) => !v)}>
+              {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+            </Button>
+            <span className="hidden font-display text-sm font-semibold text-muted-foreground md:inline">Sistem Terpadu SCA</span>
+            <Separator orientation="vertical" className="hidden h-4 md:block" />
+            <div className="min-w-0 truncate text-sm">
+              <Breadcrumbs />
+            </div>
+          </div>
           <div className="flex items-center gap-2">
+            <CommandPaletteTrigger onOpen={() => setCmdOpen(true)} />
+            <Button variant="outline" size="icon" className="md:hidden" data-testid="command-palette-trigger-mobile"
+              aria-label="Cari menu" onClick={() => setCmdOpen(true)}>
+              <Search className="h-4 w-4" />
+            </Button>
             <Select value={lang} onValueChange={setLang}>
               <SelectTrigger className="w-[92px] h-9" data-testid="lang-toggle">
                 <div className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" />{lang === "id" ? "ID" : "EN"}</div>
@@ -160,6 +173,8 @@ export default function AppShell() {
           <Outlet />
         </main>
       </div>
+
+      <CommandPalette open={cmdOpen} onOpenChange={setCmdOpen} />
 
       <AlertDialog open={warn} onOpenChange={setWarn}>
         <AlertDialogContent data-testid="idle-warning-dialog">

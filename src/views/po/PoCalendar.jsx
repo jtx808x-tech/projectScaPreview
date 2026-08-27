@@ -6,6 +6,7 @@ import { useLang } from "@/context/LangContext";
 import { fmtDate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import PageContainer from "@/components/layout/PageContainer";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -66,15 +67,18 @@ export default function PoCalendar() {
   const selectedPoObj = pos.find((p) => p.id === formPo);
 
   return (
-    <div className="space-y-6" data-testid="po-calendar-page">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="font-display text-3xl font-extrabold tracking-tight">{t("schedule")}</h1>
+    <PageContainer
+      testid="po-calendar-page"
+      pageTitle={t("schedule")}
+      pageDescription="Jadwal produksi & pengiriman per bulan."
+      pageHeaderAction={(
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" className="rounded-full" onClick={() => setCursor(new Date(year, month - 1, 1))} data-testid="cal-prev"><ChevronLeft className="h-4 w-4" /></Button>
           <div className="font-display font-bold w-40 text-center capitalize">{monthName(cursor, lang)}</div>
           <Button variant="outline" size="icon" className="rounded-full" onClick={() => setCursor(new Date(year, month + 1, 1))} data-testid="cal-next"><ChevronRight className="h-4 w-4" /></Button>
         </div>
-      </div>
+      )}
+    >
 
       <div className="flex items-center gap-4 flex-wrap text-xs text-muted-foreground">
         <span className="font-semibold">{t("legend")}:</span>
@@ -167,6 +171,6 @@ export default function PoCalendar() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageContainer>
   );
 }

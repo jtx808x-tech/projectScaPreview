@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Save, FileDown, RotateCcw, FolderOpen, Trash2, X, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { defaultState, emptyState } from "@/lib/hppDefaults";
+import { Heading } from "@/components/ui/heading";
 import { calcAll } from "@/lib/hppCalc";
 import { formatRp } from "@/lib/format";
 import { MODULES, SUMMARY_ICON } from "@/components/hpp/modules";
@@ -91,8 +92,7 @@ export default function HppCalculator() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="font-display text-3xl font-extrabold tracking-tight">Kalkulator HPP</h1>
-          <p className="text-sm text-muted-foreground">Percetakan SCA — 14 modul biaya, live reactive.</p>
+          <Heading title="Kalkulator HPP" description="Percetakan SCA — 14 modul biaya, live reactive." />
         </div>
         <div className="flex items-center gap-2">
           <button data-testid="btn-new" onClick={newCalc} title="Baru"

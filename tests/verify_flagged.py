@@ -1,5 +1,6 @@
 """Verifikasi item yang timeout di laporan testing agent (PO stages, delivery flow, HPP PDF)."""
 import json
+import os
 import urllib.request
 import urllib.error
 
@@ -38,7 +39,10 @@ def main():
             fail += 1
             print(f"  FAIL  {label}  {extra}")
 
-    st, r = req("POST", "/auth/login", body={"username": "Jeffsca", "password": "jeff3131", "role": "superadmin"})
+    # Kredensial dari environment (jangan hardcode di repo).
+    USER = os.environ.get("SUPERADMIN_USERNAME", "admin")
+    PASS = os.environ.get("SUPERADMIN_PASSWORD", "")
+    st, r = req("POST", "/auth/login", body={"username": USER, "password": PASS, "role": "superadmin"})
     token = r["token"]
     print("login superadmin:", st)
 
@@ -136,13 +140,13 @@ def main():
 
     # ---- role mismatch ----
     print("\n[Auth negative]")
-    st, r = req("POST", "/auth/login", body={"username": "Jeffsca", "password": "jeff3131", "role": "admin"})
+    st, r = req("POST", "/auth/login", body={"username": USER, "password": PASS, "role": "admin"})
     check("superadmin pilih role admin -> 401", st == 401, f"{st} {r}")
-    st, r = req("POST", "/auth/login", body={"username": "adminpic", "password": "admin1234", "role": "superadmin"})
+    st, r = req("POST", "/auth/login", body={"username": os.environ.get("TEST_ADMIN_USERNAME", "adminpic"), "password": os.environ.get("TEST_ADMIN_PASSWORD", ""), "role": "superadmin"})
     check("admin pilih role superadmin -> 401", st == 401, f"{st} {r}")
-    st, r = req("POST", "/auth/login", body={"username": "Jeffsca", "password": "salah", "role": "superadmin"})
+    st, r = req("POST", "/auth/login", body={"username": USER, "password": "salah-sekali", "role": "superadmin"})
     check("password salah -> 401", st == 401, f"{st} {r}")
-    st, r = req("POST", "/auth/login", body={"username": "Jeffsca", "password": "jeff3131"})
+    st, r = req("POST", "/auth/login", body={"username": USER, "password": PASS})
     check("tanpa role -> 400", st == 400, f"{st} {r}")
 
     # ---- cleanup ----

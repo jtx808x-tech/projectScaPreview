@@ -5,6 +5,7 @@ import api, { downloadPdf } from "@/lib/api";
 import { apiError } from "@/context/AuthContext";
 import SectionGate from "@/components/SectionGate";
 import { Card } from "@/components/ui/card";
+import PageContainer from "@/components/layout/PageContainer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -68,11 +69,12 @@ function Inner() {
   );
 
   return (
-    <div className="mx-auto max-w-2xl space-y-5">
-      <div>
-        <h1 className="font-display text-3xl font-extrabold tracking-tight">Tutup Tahun</h1>
-        <p className="text-sm text-muted-foreground">Unduh laporan akhir tahun {year}, lalu reset data untuk tahun baru.</p>
-      </div>
+    <PageContainer
+      testid="year-close-page"
+      className="mx-auto max-w-2xl"
+      pageTitle="Tutup Tahun"
+      pageDescription={`Unduh laporan akhir tahun ${year}, lalu reset data untuk tahun baru.`}
+    >
 
       <Card className="p-6 space-y-4">
         <div className="flex items-center gap-3">
@@ -140,7 +142,7 @@ function Inner() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </PageContainer>
   );
 }
 
