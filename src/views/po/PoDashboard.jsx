@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { Activity, CheckCircle2, XCircle, Boxes } from "lucide-react";
 import { useLang } from "@/context/LangContext";
 import { BUCKET_META } from "@/lib/poStages";
@@ -16,9 +16,12 @@ const ORDER = [
 export default function PoDashboard() {
   const { t } = useLang();
   const navigate = useNavigate();
-  const [data, setData] = useState(null);
-
-  useEffect(() => { api.poDashboard().then(setData).catch(() => {}); }, []);
+  // Cache react-query: tampil instan dari cache, refresh otomatis di background.
+  const { data } = useQuery({
+    queryKey: ["po", "dashboard"],
+    queryFn: () => api.poDashboard(),
+    refetchOnMount: "always",
+  });
   const counts = data?.counts || {};
   const goto = (bucket) => navigate(`/po/pos${bucket ? `?bucket=${bucket}` : ""}`);
 

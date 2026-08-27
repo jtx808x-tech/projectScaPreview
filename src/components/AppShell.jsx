@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, Suspense } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, FileStack, Droplets, Package, ClipboardList, BarChart3,
@@ -182,7 +182,18 @@ export default function AppShell() {
             secara dinamis (dibutuhkan halaman tabel full-height). Halaman lain tetap
             scroll normal karena overflow-y-auto dipertahankan. */}
         <main className="flex flex-1 flex-col overflow-y-auto p-4 md:p-8">
-          <Outlet />
+          {/* Fallback saat chunk halaman lazy dimuat — sidebar & header tetap terlihat */}
+          <Suspense
+            fallback={
+              <div role="status" aria-label="Memuat halaman" className="flex flex-1 flex-col gap-4">
+                <div className="h-8 w-56 animate-pulse rounded-md bg-muted" />
+                <div className="h-4 w-96 max-w-full animate-pulse rounded-md bg-muted" />
+                <div className="mt-2 h-64 w-full animate-pulse rounded-xl bg-muted" />
+              </div>
+            }
+          >
+            <Outlet />
+          </Suspense>
         </main>
       </div>
 

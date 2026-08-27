@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { UserPlus, Power, Trash2, KeyRound, ShieldCheck, Inbox, UserCog } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
@@ -34,9 +35,6 @@ import {
 function Inner() {
   const { user } = useAuth();
   const isSuper = user?.role === "superadmin";
-  const [activity, setActivity] = useState([]);
-  const [audit, setAudit] = useState([]);
-  const [users, setUsers] = useState([]);
   const [regOpen, setRegOpen] = useState(false);
   const [reg, setReg] = useState({ name: "", username: "", password: "", email: "", phone: "", role: "admin" });
   const [tempPwd, setTempPwd] = useState("");
@@ -52,6 +50,25 @@ function Inner() {
   const [usrPage, setUsrPage] = useState(1);
   const [usrSize, setUsrSize] = useState(25);
 
+  // Cache react-query: tampil instan dari cache, refresh otomatis di background.
+  const queryClient = useQueryClient();
+  const { data: activity = [] } = useQuery({
+    queryKey: ["logs", "activity"],
+    queryFn: async () => (await api.get("/logs/activity")).data,
+    refetchOnMount: "always",
+  });
+  const { data: audit = [] } = useQuery({
+    queryKey: ["logs", "audit"],
+    queryFn: async () => (await api.get("/logs/audit")).data,
+    refetchOnMount: "always",
+  });
+  const { data: users = [] } = useQuery({
+    queryKey: ["users"],
+    queryFn: async () => (await api.get("/users")).data,
+    enabled: isSuper,
+    refetchOnMount: "always",
+  });
+
   const paginate = (rows, page, size) => rows.slice((page - 1) * size, page * size);
   const activityRows = paginate(activity, actPage, actSize);
   const auditRows = paginate(audit, audPage, audSize);
@@ -61,13 +78,11 @@ function Inner() {
   useEffect(() => { setAudPage(1); }, [audSize]);
   useEffect(() => { setUsrPage(1); }, [usrSize]);
 
+  // Dipanggil setelah registrasi/toggle/hapus/edit user — invalidasi cache.
   const loadLogs = useCallback(() => {
-    api.get("/logs/activity").then((r) => setActivity(r.data)).catch(() => {});
-    api.get("/logs/audit").then((r) => setAudit(r.data)).catch(() => {});
-    if (isSuper) api.get("/users").then((r) => setUsers(r.data)).catch(() => {});
-  }, [isSuper]);
-
-  useEffect(() => { loadLogs(); }, [loadLogs]);
+    queryClient.invalidateQueries({ queryKey: ["logs"] });
+    queryClient.invalidateQueries({ queryKey: ["users"] });
+  }, [queryClient]);
 
   const doRegister = async () => {
     if (!reg.name || !reg.username || !reg.password) { toast.error("Lengkapi semua field."); return; }

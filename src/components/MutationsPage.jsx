@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { Plus, Search, FileDown, Pencil, Trash2, Link2, Inbox } from "lucide-react";
 import { toast } from "sonner";
 import api, { downloadPdf } from "@/lib/api";
@@ -38,8 +39,6 @@ export default function MutationsPage({ type }) {
   const isInk = type === "ink";
   const isOther = type === "other";
   const { user } = useAuth();
-  const [rows, setRows] = useState([]);
-  const [jenisOptions, setJenisOptions] = useState([]);
   const [period, setPeriod] = useState({ start: "", end: "" });
   const [fJenis, setFJenis] = useState("all");
   const [fTrx, setFTrx] = useState("all");
@@ -48,7 +47,6 @@ export default function MutationsPage({ type }) {
   const [formOpen, setFormOpen] = useState(false);
   const [editData, setEditData] = useState(null);
   const [delId, setDelId] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [hidden, setHidden] = useState({});
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
@@ -64,30 +62,38 @@ export default function MutationsPage({ type }) {
     return isInk ? m.harga_per_kg : m.harga_per_satuan;
   };
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = { year: new Date().getFullYear() };
-      if (period.start) params.start = period.start;
-      if (period.end) params.end = period.end;
-      if (fJenis !== "all") params.jenis = fJenis;
-      if (fTrx !== "all") params.transaksi = fTrx;
-      if (fSupplier) params.supplier = fSupplier;
-      if (search) params.search = search;
-      const [{ data }, jr] = await Promise.all([
-        api.get(`${base}/mutations`, { params }),
-        api.get(`${base}/jenis`),
-      ]);
-      setRows(data);
-      setJenisOptions(jr.data);
-    } catch (e) {
-      toast.error(apiError(e));
-    } finally {
-      setLoading(false);
-    }
-  }, [base, period, fJenis, fTrx, fSupplier, search]);
+  // Cache react-query: pindah menu terasa instan (data cache tampil lebih dulu),
+  // lalu di-refresh otomatis di background (refetchOnMount: "always").
+  const queryParams = useMemo(() => {
+    const params = { year: new Date().getFullYear() };
+    if (period.start) params.start = period.start;
+    if (period.end) params.end = period.end;
+    if (fJenis !== "all") params.jenis = fJenis;
+    if (fTrx !== "all") params.transaksi = fTrx;
+    if (fSupplier) params.supplier = fSupplier;
+    if (search) params.search = search;
+    return params;
+  }, [period, fJenis, fTrx, fSupplier, search]);
 
-  useEffect(() => { load(); }, [load]);
+  const queryClient = useQueryClient();
+  const { data: rows = [], isLoading, error } = useQuery({
+    queryKey: ["mutations", type, queryParams],
+    queryFn: async () => (await api.get(`${base}/mutations`, { params: queryParams })).data,
+    placeholderData: keepPreviousData,
+    refetchOnMount: "always",
+  });
+  const { data: jenisOptions = [] } = useQuery({
+    queryKey: ["jenis", type],
+    queryFn: async () => (await api.get(`${base}/jenis`)).data,
+    refetchOnMount: "always",
+  });
+  useEffect(() => { if (error) toast.error(apiError(error)); }, [error]);
+
+  // Dipanggil setelah tambah/edit/hapus mutasi — invalidasi cache agar refetch.
+  const load = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["mutations", type] });
+    queryClient.invalidateQueries({ queryKey: ["jenis", type] });
+  }, [queryClient, type]);
 
   const keluarOptions = useMemo(() => rows.filter((r) => r.jenis_transaksi === "keluar"), [rows]);
   const masukOptions = useMemo(() => rows.filter((r) => r.jenis_transaksi === "masuk"), [rows]);
@@ -213,7 +219,7 @@ export default function MutationsPage({ type }) {
       {/* Card tabel mengisi sisa tinggi viewport (flex-1 + min-h-0);
           area scroll internal = flex-1, pagination selalu menempel di dasar Card. */}
       <Card className="flex flex-col overflow-hidden md:min-h-0 md:flex-1">
-        {loading && rows.length === 0 ? (
+        {isLoading ? (
           <TableSkeleton columns={colCount} rows={5} />
         ) : (
         <div className="max-h-[60vh] overflow-auto md:max-h-none md:min-h-0 md:flex-1">
@@ -236,7 +242,7 @@ export default function MutationsPage({ type }) {
               </TableRow>
             </TableHeader>
             <TableBody data-testid="mutations-table-body">
-              {!loading && rows.length === 0 && (
+              {!isLoading && rows.length === 0 && (
                 <TableRow className="hover:bg-transparent">
                   <TableCell colSpan={colCount} className="py-6">
                     <Empty className="py-4">
@@ -293,7 +299,7 @@ export default function MutationsPage({ type }) {
           </Table>
         </div>
         )}
-        {!loading && total > 0 && (
+        {total > 0 && (
           <TablePagination
             page={safePage}
             pageSize={pageSize}

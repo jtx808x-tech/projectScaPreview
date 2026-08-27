@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { FileDown, Filter, Inbox } from "lucide-react";
 import { toast } from "sonner";
 import api, { downloadPdf } from "@/lib/api";
@@ -17,11 +18,15 @@ import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/
 import PageContainer from "@/components/layout/PageContainer";
 
 export default function StockReport() {
-  const [data, setData] = useState(null);
   const [fSupplier, setFSupplier] = useState("all");
 
-  const load = () => api.get("/reports/stock").then((r) => setData(r.data)).catch((e) => toast.error(apiError(e)));
-  useEffect(() => { load(); }, []);
+  // Cache react-query: tampil instan dari cache, refresh otomatis di background.
+  const { data, error } = useQuery({
+    queryKey: ["reports", "stock"],
+    queryFn: async () => (await api.get("/reports/stock")).data,
+    refetchOnMount: "always",
+  });
+  useEffect(() => { if (error) toast.error(apiError(error)); }, [error]);
 
   const dl = async (path, name) => {
     try { await downloadPdf(path, {}, name); toast.success("PDF diunduh."); }
