@@ -6,7 +6,7 @@ import {
 import { FileDown, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { toast } from "sonner";
 import api, { downloadPdf } from "@/lib/api";
-import { apiError } from "@/context/AuthContext";
+import { useAuth, apiError } from "@/context/AuthContext";
 import { formatRupiah, formatDateID } from "@/lib/format";
 import SectionGate from "@/components/SectionGate";
 import PeriodFilter from "@/components/PeriodFilter";
@@ -73,6 +73,8 @@ function DiffBadge({ diff, pct }) {
 }
 
 function Inner() {
+  const { user } = useAuth();
+  const isSuper = user?.role === "superadmin";
   const [period, setPeriod] = useState({ start: "", end: "", label: "" });
   const [data, setData] = useState(null);
   const [pdfOpen, setPdfOpen] = useState(false);
@@ -88,22 +90,34 @@ function Inner() {
 
   useEffect(() => { load(); }, [load]);
 
+  /** Unduh PDF tanpa cek password (dipakai setelah verifikasi / untuk superadmin). */
+  const runDownload = async (kind) => {
+    try {
+      const params = { start: period.start, end: period.end };
+      if (kind === "detail") await downloadPdf("/pdf/detail", params, "laporan-detail.pdf");
+      else await downloadPdf("/pdf/stock-nominal", params, "laporan-stok-keseluruhan.pdf");
+      toast.success("PDF diunduh.");
+      setPdfOpen(false); setPdfPwd("");
+      return true;
+    } catch (e) { toast.error(apiError(e, "Gagal unduh PDF")); return false; }
+  };
+
   const confirmDownload = async () => {
     try {
       await api.post("/auth/verify-temp-password", { password: pdfPwd });
     } catch (e) {
       toast.error(apiError(e, "Password salah")); return;
     }
-    try {
-      const params = { start: period.start, end: period.end };
-      if (pdfKind === "detail") await downloadPdf("/pdf/detail", params, "laporan-detail.pdf");
-      else await downloadPdf("/pdf/stock-nominal", params, "laporan-stok-keseluruhan.pdf");
-      toast.success("PDF diunduh.");
-      setPdfOpen(false); setPdfPwd("");
-    } catch (e) { toast.error(apiError(e, "Gagal unduh PDF")); }
+    await runDownload(pdfKind);
   };
 
-  const openPdf = (kind) => { setPdfKind(kind); setPdfPwd(""); setPdfOpen(true); };
+  // Superadmin punya akses penuh: langsung unduh tanpa dialog password.
+  // Admin/PIC tetap wajib memasukkan password akses sementara.
+  const openPdf = (kind) => {
+    setPdfKind(kind);
+    if (isSuper) { runDownload(kind); return; }
+    setPdfPwd(""); setPdfOpen(true);
+  };
 
   const cmp = data?.comparison;
 

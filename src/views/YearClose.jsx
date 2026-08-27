@@ -2,7 +2,7 @@ import { useState } from "react";
 import { CalendarX, FileDown, Trash2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import api, { downloadPdf } from "@/lib/api";
-import { apiError } from "@/context/AuthContext";
+import { useAuth, apiError } from "@/context/AuthContext";
 import SectionGate from "@/components/SectionGate";
 import { Card } from "@/components/ui/card";
 import PageContainer from "@/components/layout/PageContainer";
@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/alert-dialog";
 
 function Inner() {
+  const { user } = useAuth();
+  const isSuper = user?.role === "superadmin";
   const year = new Date().getFullYear();
   const [steps, setSteps] = useState({ paper: false, ink: false, nominal: false });
   const [pwdOpen, setPwdOpen] = useState(false);
@@ -37,15 +39,26 @@ function Inner() {
     finally { setBusy(false); }
   };
 
-  const dlNominal = async () => {
-    try { await api.post("/auth/verify-temp-password", { password: pwd }); }
-    catch (e) { toast.error(apiError(e, "Password salah")); return; }
+  /** Unduh PDF nominal tanpa cek password (superadmin / setelah verifikasi). */
+  const runNominalDownload = async () => {
     try {
       await downloadPdf("/pdf/stock-nominal", {}, `laporan-stok-keseluruhan-${year}.pdf`);
       setSteps((s) => ({ ...s, nominal: true }));
       setPwdOpen(false); setPwd("");
       toast.success("PDF stok keseluruhan (nominal) terunduh.");
     } catch (e) { toast.error(apiError(e, "Gagal unduh PDF")); }
+  };
+
+  const dlNominal = async () => {
+    try { await api.post("/auth/verify-temp-password", { password: pwd }); }
+    catch (e) { toast.error(apiError(e, "Password salah")); return; }
+    await runNominalDownload();
+  };
+
+  // Superadmin: langsung unduh. Admin/PIC: minta password akses sementara.
+  const requestNominal = () => {
+    if (isSuper) { runNominalDownload(); return; }
+    setPwd(""); setPwdOpen(true);
   };
 
   const allDone = steps.paper && steps.ink && steps.nominal;
@@ -94,7 +107,7 @@ function Inner() {
           <Button variant="outline" className="gap-2" data-testid="download-mutations-pdf" disabled={busy} onClick={dlMutations}>
             <FileDown className="h-4 w-4" /> Unduh PDF Mutasi
           </Button>
-          <Button variant="outline" className="gap-2" data-testid="download-nominal-pdf" onClick={() => { setPwd(""); setPwdOpen(true); }}>
+          <Button variant="outline" className="gap-2" data-testid="download-nominal-pdf" onClick={requestNominal}>
             <FileDown className="h-4 w-4" /> Unduh PDF Stok Keseluruhan
           </Button>
         </div>

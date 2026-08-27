@@ -102,3 +102,8 @@ node_modules/.cache/default-development/4.pack
 .env.local
 .emergent/
 .next/
+
+# Token hasil test (jangan pernah di-commit)
+admin_token.txt
+*_token.txt
+backend_test_extended_results.json
