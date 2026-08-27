@@ -158,6 +158,7 @@ export default function MutationsPage({ type }) {
 
   return (
     <PageContainer
+      fillHeight
       testid={`mutations-page-${type}`}
       pageTitle={`Mutasi ${TITLES[type]}`}
       pageDescription="Input & riwayat transaksi Masuk / Keluar / Retur."
@@ -170,7 +171,7 @@ export default function MutationsPage({ type }) {
       )}
     >
 
-      <Card className="p-4">
+      <Card className="p-4 md:shrink-0">
         <div className="flex flex-wrap items-end gap-3">
           <PeriodFilter onChange={setPeriod} />
           <div className="space-y-1.5">
@@ -209,11 +210,13 @@ export default function MutationsPage({ type }) {
         </div>
       </Card>
 
-      <Card className="flex flex-col overflow-hidden">
+      {/* Card tabel mengisi sisa tinggi viewport (flex-1 + min-h-0);
+          area scroll internal = flex-1, pagination selalu menempel di dasar Card. */}
+      <Card className="flex flex-col overflow-hidden md:min-h-0 md:flex-1">
         {loading && rows.length === 0 ? (
           <TableSkeleton columns={colCount} rows={5} />
         ) : (
-        <div className="max-h-[60vh] overflow-auto">
+        <div className="max-h-[60vh] overflow-auto md:max-h-none md:min-h-0 md:flex-1">
           <Table>
             <TableHeader className="sticky top-0 z-10 bg-card">
               <TableRow>

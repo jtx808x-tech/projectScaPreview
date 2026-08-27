@@ -33,6 +33,14 @@ export default function PageContainer({
   pageHeaderAction,
   className = "",
   testid,
+  /**
+   * fillHeight — halaman tabel full-height (Mutasi, Log & User).
+   * Konten mengisi sisa tinggi viewport (flex-1 + min-h-0) sehingga Card tabel
+   * stretch dinamis & pagination menempel di dasar Card tanpa ruang kosong,
+   * di semua ukuran layar (13" s/d QHD 27"/ultrawide). Aktif di ≥md;
+   * di mobile tetap scroll halaman normal.
+   */
+  fillHeight = false,
 }) {
   if (!access) {
     return (
@@ -49,18 +57,29 @@ export default function PageContainer({
   const hasHeader = pageTitle || pageHeaderAction;
 
   return (
-    <div className={`flex flex-1 flex-col ${className}`} data-testid={testid}>
+    <div
+      className={`flex flex-1 flex-col ${fillHeight ? "md:min-h-0" : ""} ${className}`}
+      data-testid={testid}
+    >
       {isLoading ? (
         <PageSkeleton />
       ) : (
         <>
           {hasHeader && (
-            <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+            <div className="mb-6 flex shrink-0 flex-wrap items-start justify-between gap-3">
               <Heading title={pageTitle ?? ""} description={pageDescription} />
               {pageHeaderAction && <div className="flex shrink-0 items-center gap-2">{pageHeaderAction}</div>}
             </div>
           )}
-          <div className="space-y-6">{children}</div>
+          <div
+            className={
+              fillHeight
+                ? "space-y-6 md:flex md:min-h-0 md:flex-1 md:flex-col md:gap-6 md:space-y-0"
+                : "space-y-6"
+            }
+          >
+            {children}
+          </div>
         </>
       )}
     </div>

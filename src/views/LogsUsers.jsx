@@ -97,21 +97,22 @@ function Inner() {
 
   return (
     <PageContainer
+      fillHeight
       testid="logs-users-page"
       pageTitle="Log & Manajemen User"
       pageDescription="Aktivitas login, audit mutasi, dan pengelolaan user."
     >
 
-      <Tabs defaultValue="activity">
-        <TabsList className="flex-wrap">
+      <Tabs defaultValue="activity" className="md:flex md:min-h-0 md:flex-1 md:flex-col">
+        <TabsList className="flex-wrap md:shrink-0">
           <TabsTrigger value="activity" data-testid="tab-activity">Log Aktivitas</TabsTrigger>
           <TabsTrigger value="audit" data-testid="tab-audit">Audit Mutasi</TabsTrigger>
           {isSuper && <TabsTrigger value="users" data-testid="tab-users">Manajemen User</TabsTrigger>}
         </TabsList>
 
-        <TabsContent value="activity">
-          <Card className="flex flex-col overflow-hidden">
-            <div className="max-h-[60vh] overflow-auto">
+        <TabsContent value="activity" className="md:min-h-0 md:flex-1 md:flex-col md:data-[state=active]:flex">
+          <Card className="flex flex-col overflow-hidden md:min-h-0 md:flex-1">
+            <div className="max-h-[60vh] overflow-auto md:max-h-none md:min-h-0 md:flex-1">
             <Table>
               <TableHeader className="sticky top-0 z-10 bg-card">
                 <TableRow><TableHead>Nama</TableHead><TableHead>Username</TableHead>
@@ -142,9 +143,9 @@ function Inner() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="audit">
-          <Card className="flex flex-col overflow-hidden">
-            <div className="max-h-[60vh] overflow-auto">
+        <TabsContent value="audit" className="md:min-h-0 md:flex-1 md:flex-col md:data-[state=active]:flex">
+          <Card className="flex flex-col overflow-hidden md:min-h-0 md:flex-1">
+            <div className="max-h-[60vh] overflow-auto md:max-h-none md:min-h-0 md:flex-1">
             <Table>
               <TableHeader className="sticky top-0 z-10 bg-card">
                 <TableRow><TableHead>Waktu</TableHead><TableHead>User</TableHead><TableHead>Aksi</TableHead>
@@ -181,9 +182,9 @@ function Inner() {
         </TabsContent>
 
         {isSuper && (
-          <TabsContent value="users" className="space-y-5">
-            <Card className="p-5">
-              <div className="mb-3 flex items-center justify-between">
+          <TabsContent value="users" className="space-y-5 md:min-h-0 md:flex-1 md:flex-col md:gap-5 md:space-y-0 md:data-[state=active]:flex">
+            <Card className="p-5 md:flex md:min-h-0 md:flex-1 md:flex-col">
+              <div className="mb-3 flex items-center justify-between md:shrink-0">
                 <h3 className="font-display text-lg font-bold">Daftar User</h3>
                 <Dialog open={regOpen} onOpenChange={setRegOpen}>
                   <DialogTrigger asChild>
@@ -214,7 +215,7 @@ function Inner() {
                   </DialogContent>
                 </Dialog>
               </div>
-              <div className="max-h-[55vh] overflow-auto">
+              <div className="max-h-[55vh] overflow-auto md:max-h-none md:min-h-0 md:flex-1">
                 <Table>
                   <TableHeader className="sticky top-0 z-10 bg-card">
                     <TableRow><TableHead>Nama</TableHead><TableHead>Username</TableHead><TableHead>Email</TableHead><TableHead>Role</TableHead>
@@ -241,7 +242,7 @@ function Inner() {
                 </Table>
               </div>
               {users.length > usrSize && (
-                <div className="-mx-5 -mb-5 mt-3">
+                <div className="-mx-5 -mb-5 mt-3 md:shrink-0">
                   <TablePagination
                     page={usrPage}
                     pageSize={usrSize}
@@ -254,7 +255,7 @@ function Inner() {
               )}
             </Card>
 
-            <Card className="p-5">
+            <Card className="p-5 md:shrink-0">
               <div className="mb-2 flex items-center gap-2">
                 <KeyRound className="h-4 w-4 text-primary" />
                 <h3 className="font-display text-lg font-bold">Ubah Password Akses Sementara</h3>
