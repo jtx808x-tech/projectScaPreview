@@ -300,4 +300,12 @@ Ingress preview Emergent mengarahkan semua request `/api/*` ke port **8001**,
 sedangkan Next.js berjalan di port **3000**. Karena itu `backend/server.py`
 hanya berisi reverse proxy tipis (`/api/*` → `localhost:3000/api/*`).
 
+`frontend/package.json` hanya berisi shim (`cd .. && yarn start`) supaya supervisor
+Emergent yang menjalankan `yarn start` di folder `frontend/` tetap mem-boot Next.js di root.
+
+> **Jangan jalankan `yarn build` saat dev server (`next dev`) masih hidup.**
+> Build produksi menimpa folder `.next` milik dev server dan menyebabkan error
+> `Cannot find module './xxxx.js'` pada semua route. Bila terjadi:
+> `supervisorctl stop frontend && rm -rf .next && supervisorctl start frontend`.
+
 Di Vercel proxy ini **tidak dipakai** — Next.js melayani `/api/*` secara native.
