@@ -48,7 +48,7 @@ export default function Login() {
               Portal Terpadu Percetakan SCA
             </h1>
             <p className="mt-3 max-w-md text-base text-zinc-100 lg:text-lg" style={{ textShadow: "0 1px 5px rgba(0,0,0,0.6)" }}>
-              Laporan Stok, Kalkulator HPP, dan Tracking PO — dalam satu aplikasi.
+              Laporan Stok, Tracking PO, Stok Klien, Jatuh Tempo Klien, dan Kalkulator HPP — dalam satu aplikasi.
             </p>
           </div>
         </div>

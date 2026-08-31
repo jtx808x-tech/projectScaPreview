@@ -19,6 +19,10 @@ Antarmuka sepenuhnya Bahasa Indonesia, responsive, mendukung mode terang & gelap
 | **Laporan Detail** | Nominal rupiah, komposisi nominal, tren nilai stok bulanan, perbandingan dengan periode sebelumnya, rekap PPN per bulan, ekspor PDF *(section terproteksi)* |
 | **Log & User** | Log aktivitas login/logout, log audit edit/hapus, CRUD user, aktif/nonaktif user, ubah password akses sementara *(section terproteksi)* |
 | **Tutup Tahun** | Wajib unduh PDF laporan dulu, baru reset seluruh data mutasi. Data user & log tetap tersimpan *(section terproteksi)* |
+| **Kalkulator HPP** | Perhitungan harga pokok produksi cetak *(khusus Superadmin)* |
+| **PO Tracker** | Dashboard PO, daftar PO, tahapan/jadwal produksi, kalender jadwal |
+| **Stok Klien** | Stok barang **titipan klien**: hirarki Klien → PO → Item → Mutasi masuk/keluar, riwayat mutasi ber-filter, ekspor PDF |
+| **Jatuh Tempo Klien** | Invoice klien: TOP dinamis (Cash/Net 30/60/90/Cicilan), tanggal jatuh tempo, cicilan bertahap, status lunas/belum lunas, laporan pemasukan & piutang + grafik omset bulanan, ekspor PDF *(khusus Superadmin)* |
 
 Aturan bisnis penting:
 
@@ -29,14 +33,26 @@ Aturan bisnis penting:
 - Auto-logout setelah **60 menit** tidak aktif, dengan dialog peringatan di menit ke-58.
 - Semua perubahan & penghapusan mutasi tercatat di **log audit**.
 
+Aturan bisnis 2 tool klien:
+
+- **Stok Klien** — stok item tidak boleh negatif; mutasi ditolak bila item berstatus
+  *Selesai/Ditutup*; edit atau hapus mutasi otomatis merekonsiliasi kuantiti item;
+  hapus klien/PO ikut menghapus item & mutasi di bawahnya (cascade).
+- **Jatuh Tempo Klien** — invoice ber-TOP `Cicilan` otomatis berubah menjadi **Lunas**
+  ketika akumulasi cicilan ≥ nominal total; mengganti nama opsi TOP ikut memperbarui
+  seluruh invoice yang memakai opsi lama; opsi `Cicilan` terkunci (tidak bisa diubah/dihapus);
+  tombol **Hapus Semua** baru aktif setelah backup PDF diunduh.
+- Koleksi 2 tool ini **terpisah penuh** (`klien_*`, `tempo_invoices`) dari koleksi
+  Stok SCA / HPP / PO Tracker, sehingga tidak ada risiko saling mengganggu.
+
 ---
 
 ## Role & akses
 
 | Role | Akses |
 | --- | --- |
-| **Superadmin** | Semua modul, termasuk semua nominal rupiah. Tanpa password tambahan |
-| **Admin/PIC** | Dashboard, semua Mutasi, Laporan Stok. Nominal rupiah **disembunyikan** (kartu tampil "Terkunci") |
+| **Superadmin** | Semua modul, termasuk semua nominal rupiah dan kedua tool klien. Tanpa password tambahan |
+| **Admin/PIC** | Dashboard, semua Mutasi, Laporan Stok, PO Tracker, **Stok Klien**. Nominal rupiah **disembunyikan** (kartu tampil "Terkunci"). **Tidak** punya akses Kalkulator HPP & Jatuh Tempo Klien |
 
 Section terproteksi (**Laporan Detail**, **Log & User**, **Tutup Tahun**) bisa dibuka oleh
 Admin/PIC dengan **password akses sementara**, berlaku selama sesi login saat itu
@@ -212,6 +228,36 @@ Semua endpoint diawali `/api`. Autentikasi memakai cookie httpOnly
 | POST | `/year/close` | section |
 | GET | `/pdf/{kind}` | login / section |
 
+**Stok Klien** — akses: login (Superadmin + Admin/PIC)
+
+| Method | Endpoint |
+| --- | --- |
+| GET · POST | `/klien/clients` |
+| PUT · DELETE | `/klien/clients/{id}` *(delete = cascade PO + item + mutasi)* |
+| GET · POST | `/klien/pos` *(GET filter `?klien_id=`)* |
+| PUT · DELETE | `/klien/pos/{id}` |
+| GET · POST | `/klien/items` *(GET filter `?po_id=`)* |
+| PUT · DELETE | `/klien/items/{id}` |
+| GET · POST | `/klien/mutations` *(GET filter `?klien_id=&po_id=&item_id=&jenis=&start=&end=`)* |
+| PUT · DELETE | `/klien/mutations/{id}` *(stok item ikut direkonsiliasi)* |
+| GET | `/klien/dashboard` |
+| GET | `/klien/pdf?kind=stok\|riwayat` |
+
+**Jatuh Tempo Klien** — akses: **superadmin saja**
+
+| Method | Endpoint |
+| --- | --- |
+| GET · POST · DELETE | `/tempo/invoices` *(GET filter `?search=&status=&sort_by=&order=`, DELETE = hapus semua)* |
+| GET · PUT · DELETE | `/tempo/invoices/{id}` |
+| PATCH | `/tempo/invoices/{id}/status` |
+| POST | `/tempo/invoices/{id}/installments` |
+| DELETE | `/tempo/invoices/{id}/installments/{insId}` |
+| GET · POST · PUT | `/tempo/top-options` |
+| DELETE | `/tempo/top-options/{value}` *(`Cicilan` terkunci)* |
+| GET | `/tempo/reports/summary` · `/tempo/reports/breakdown` *(filter `?start=&end=`)* |
+| GET | `/tempo/reports/monthly?year=` |
+| GET | `/tempo/pdf?kind=all\|detail\|report` |
+
 `{type}` = `paper` · `ink` · `other`
 `{kind}` = `paper-mutations` · `ink-mutations` · `other-mutations` · `stock-ringkas` · `detail` · `stock-nominal`
 
@@ -227,7 +273,6 @@ Error selalu dikembalikan sebagai `{ "detail": "pesan dalam Bahasa Indonesia" }`
 ```bash
 bash tests/test_core.sh
 ```
-
 47 skenario end-to-end: login & guard token, CRUD ketiga jenis mutasi, validasi
 stok tidak cukup, retur beserta referensi, filter & pencarian, dashboard,
 laporan stok & detail, log, CRUD user, proteksi section per role, 6 laporan PDF,
@@ -235,6 +280,17 @@ ubah password akses, dan tutup tahun.
 
 Status terakhir: **47/47 PASS**, `yarn build` sukses, testing agent melaporkan
 backend 44/44 dan seluruh alur UI utama berjalan normal tanpa bug kritis.
+
+### Data contoh 2 tool klien
+
+```bash
+node scripts/seed_klien_tempo.mjs           # tambah data contoh (aman dijalankan berulang)
+node scripts/seed_klien_tempo.mjs --wipe    # kosongkan dulu, lalu isi ulang
+```
+
+Menghasilkan 5 klien, 6 PO, 10 item, 20 mutasi, dan 8 invoice (mencakup skenario
+lewat jatuh tempo, mendekati tempo, lunas, dan cicilan). Script ini **hanya** menyentuh
+koleksi `klien_*` dan `tempo_invoices`.
 
 ---
 

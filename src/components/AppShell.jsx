@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, FileStack, Droplets, Package, ClipboardList, BarChart3,
   Users, CalendarX, Menu, X, Lock, Calculator,
-  ListTodo, CalendarDays, Globe, Search,
+  ListTodo, CalendarDays, Globe, Search, Boxes, History, Receipt, PieChart,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
@@ -80,6 +80,22 @@ export default function AppShell() {
 
   const hppMenu = perms.canHpp ? [{ to: "/hpp", label: "Kalkulator HPP", icon: Calculator, end: true }] : [];
 
+  // Tool baru: Stok Klien (Superadmin + Admin/PIC)
+  const klienMenu = perms.canStokKlien
+    ? [
+        { to: "/stok-klien", label: "Dashboard Stok Klien", icon: Boxes, end: true },
+        { to: "/stok-klien/riwayat", label: "Riwayat Mutasi Klien", icon: History },
+      ]
+    : [];
+
+  // Tool baru: Jatuh Tempo Klien (Superadmin only — memuat nominal Rupiah)
+  const tempoMenu = perms.canTempo
+    ? [
+        { to: "/tempo", label: "Daftar Invoice", icon: Receipt, end: true },
+        { to: "/tempo/laporan", label: "Laporan Jatuh Tempo", icon: PieChart },
+      ]
+    : [];
+
   const NavItem = ({ item }) => (
     <NavLink to={item.to} end={item.end}
       data-testid={`nav-${item.label.toLowerCase().replace(/[^a-z]+/g, "-")}`}
@@ -104,7 +120,7 @@ export default function AppShell() {
         <Logo size={38} />
         <div>
           <div className="font-display text-base font-extrabold tracking-tight leading-none">SCA PORTAL</div>
-          <div className="mt-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Stok • HPP • PO</div>
+          <div className="mt-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Stok • PO • Klien</div>
         </div>
       </div>
       <nav className="flex-1 space-y-0.5 p-3 overflow-y-auto">
@@ -113,6 +129,20 @@ export default function AppShell() {
 
         <SectionHeader label="Tracking PO" />
         {poMenu.map((item) => <NavItem key={item.to} item={item} />)}
+
+        {klienMenu.length > 0 && (
+          <>
+            <SectionHeader label="Stok Klien" />
+            {klienMenu.map((item) => <NavItem key={item.to} item={item} />)}
+          </>
+        )}
+
+        {tempoMenu.length > 0 && (
+          <>
+            <SectionHeader label="Jatuh Tempo Klien" />
+            {tempoMenu.map((item) => <NavItem key={item.to} item={item} />)}
+          </>
+        )}
 
         {hppMenu.length > 0 && (
           <>

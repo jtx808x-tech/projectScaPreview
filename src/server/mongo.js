@@ -42,7 +42,17 @@ export const COL = {
   pos: "pos",
   poSchedules: "po_schedules",
   poFiles: "po_files",
+  // Stok Klien (tool baru — koleksi terpisah, tidak menyentuh koleksi Stok SCA/PO)
+  klienClients: "klien_clients",
+  klienPos: "klien_pos",
+  klienItems: "klien_items",
+  klienMutations: "klien_mutations",
+  // Jatuh Tempo Klien (tool baru)
+  tempoInvoices: "tempo_invoices",
 };
+
+/** Key setting untuk opsi TOP tool Jatuh Tempo Klien. */
+export const TEMPO_TOP_KEY = "tempo_top_options";
 
 export const COLLECTION_BY_TYPE = {
   paper: COL.paper,

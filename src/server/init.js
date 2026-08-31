@@ -25,6 +25,20 @@ async function runInit() {
     db.collection(COL.poSchedules).createIndex({ po_id: 1 }),
     db.collection(COL.poFiles).createIndex({ id: 1 }, { unique: true }),
     db.collection(COL.poFiles).createIndex({ po_id: 1, is_deleted: 1 }),
+    // Stok Klien
+    db.collection(COL.klienClients).createIndex({ id: 1 }, { unique: true }),
+    db.collection(COL.klienClients).createIndex({ nama: 1 }),
+    db.collection(COL.klienPos).createIndex({ id: 1 }, { unique: true }),
+    db.collection(COL.klienPos).createIndex({ klien_id: 1 }),
+    db.collection(COL.klienItems).createIndex({ id: 1 }, { unique: true }),
+    db.collection(COL.klienItems).createIndex({ po_id: 1 }),
+    db.collection(COL.klienMutations).createIndex({ id: 1 }, { unique: true }),
+    db.collection(COL.klienMutations).createIndex({ item_id: 1 }),
+    db.collection(COL.klienMutations).createIndex({ tanggal: -1 }),
+    // Jatuh Tempo Klien
+    db.collection(COL.tempoInvoices).createIndex({ id: 1 }, { unique: true }),
+    db.collection(COL.tempoInvoices).createIndex({ due_date: 1 }),
+    db.collection(COL.tempoInvoices).createIndex({ status: 1 }),
   ]);
 
   // Seed superadmin (idempotent)

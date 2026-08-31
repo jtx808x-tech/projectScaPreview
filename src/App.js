@@ -29,6 +29,12 @@ const PoList = lazy(() => import("@/views/po/PoList"));
 const PoForm = lazy(() => import("@/views/po/PoForm"));
 const PoDetail = lazy(() => import("@/views/po/PoDetail"));
 const PoCalendar = lazy(() => import("@/views/po/PoCalendar"));
+// Stok Klien (tool baru)
+const KlienDashboard = lazy(() => import("@/views/klien/Dashboard"));
+const KlienHistory = lazy(() => import("@/views/klien/History"));
+// Jatuh Tempo Klien (tool baru — Superadmin only)
+const TempoInvoices = lazy(() => import("@/views/tempo/Invoices"));
+const TempoReports = lazy(() => import("@/views/tempo/Reports"));
 
 function Protected({ children }) {
   const { user } = useAuth();
@@ -78,6 +84,12 @@ function App() {
                     <Route path="po/pos/:id" element={<PoDetail />} />
                     <Route path="po/pos/:id/edit" element={<PoForm />} />
                     <Route path="po/kalender" element={<PoCalendar />} />
+                    {/* Stok Klien tools — Superadmin + Admin/PIC */}
+                    <Route path="stok-klien" element={<KlienDashboard />} />
+                    <Route path="stok-klien/riwayat" element={<KlienHistory />} />
+                    {/* Jatuh Tempo Klien tools — Superadmin only */}
+                    <Route path="tempo" element={<RequireSuper><TempoInvoices /></RequireSuper>} />
+                    <Route path="tempo/laporan" element={<RequireSuper><TempoReports /></RequireSuper>} />
                     {/* Legacy aliases (backward compat) */}
                     <Route path="kertas" element={<Navigate to="/stok/kertas" replace />} />
                     <Route path="tinta" element={<Navigate to="/stok/tinta" replace />} />

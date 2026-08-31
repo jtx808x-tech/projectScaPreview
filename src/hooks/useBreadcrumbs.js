@@ -20,6 +20,10 @@ const ROUTE_LABELS = {
   edit: "Ubah PO",
   kalender: "Kalender Jadwal",
   hpp: "Kalkulator HPP",
+  "stok-klien": "Stok Klien",
+  riwayat: "Riwayat Mutasi",
+  tempo: "Jatuh Tempo Klien",
+  laporan: "Laporan",
 };
 
 const isId = (seg) => /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(seg) || /^[0-9a-f]{16,}$/i.test(seg);

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, FileStack, Droplets, Package, ClipboardList, BarChart3,
   Users, CalendarX, Calculator, ListTodo, CalendarDays, Search, Moon, Sun, LogOut,
+  Boxes, History, Receipt, PieChart,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 
@@ -80,9 +81,25 @@ export default function CommandPalette({ open, onOpenChange }) {
       ? [{ to: "/hpp", label: "Kalkulator HPP", icon: ICONS.hpp, show: true }]
       : [];
 
+    const klien = perms.canStokKlien
+      ? [
+          { to: "/stok-klien", label: "Dashboard Stok Klien", icon: Boxes },
+          { to: "/stok-klien/riwayat", label: "Riwayat Mutasi Klien", icon: History },
+        ]
+      : [];
+
+    const tempo = perms.canTempo
+      ? [
+          { to: "/tempo", label: "Daftar Invoice", icon: Receipt },
+          { to: "/tempo/laporan", label: "Laporan Jatuh Tempo", icon: PieChart },
+        ]
+      : [];
+
     return [
       { heading: "Laporan Stok SCA", items: stok },
       { heading: "Tracking PO", items: po },
+      ...(klien.length ? [{ heading: "Stok Klien", items: klien }] : []),
+      ...(tempo.length ? [{ heading: "Jatuh Tempo Klien", items: tempo }] : []),
       ...(hpp.length ? [{ heading: "Kalkulator", items: hpp }] : []),
     ];
   }, [perms]);

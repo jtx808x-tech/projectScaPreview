@@ -65,6 +65,8 @@ export function AuthProvider({ children }) {
     canStokYearClose: isSuper,
     canHpp: isSuper,            // HPP HANYA Superadmin
     canPo: !!user,              // PO Tracker semua role
+    canStokKlien: !!user,       // Stok Klien: Superadmin + Admin/PIC
+    canTempo: isSuper,          // Jatuh Tempo Klien HANYA Superadmin (berisi nominal Rupiah)
     canUsers: isSuper,          // Register user hanya Superadmin
   };
 

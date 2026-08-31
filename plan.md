@@ -150,6 +150,63 @@
 - `jtx808x-tech/projectScaPreview` — PR #1 **sudah di-merge** ke `main` (54 file, +2546/-297)
 - Kredensial hardcoded di `tests/test_core.sh` dipindah ke environment
 
+### Fase H — Merge 2 tools baru: Stok Klien + Jatuh Tempo Klien (SELESAI, iteration_6.json)
+
+**Requirement user:** merge tanpa regresi — *"wajib 0 regresi, 3 P Calculator PO Tracker jangan disentuh"*.
+
+**Strategi isolasi (kunci 0 regresi):** semua koleksi baru diberi prefix sendiri sehingga tidak
+pernah menyentuh koleksi milik 3 tool lama (`paper_mutations`, `ink_mutations`,
+`other_mutations`, `hpp_calculations`, `pos`, `po_schedules`, `po_files`, `users`):
+
+| Tool baru | Koleksi | Route |
+| --- | --- | --- |
+| Stok Klien | `klien_clients`, `klien_pos`, `klien_items`, `klien_mutations` | `/api/klien/**` |
+| Jatuh Tempo Klien | `tempo_invoices` + `settings` key `tempo_top_options` | `/api/tempo/**` |
+
+Perubahan pada file lama bersifat **additive saja**: `mongo.js` (+entry COL), `init.js` (+index),
+`App.js` (+4 route), `AppShell.jsx` (+2 section sidebar), `AuthContext.jsx` (+2 flag perms),
+`CommandPalette.jsx` (+2 grup), `useBreadcrumbs.js` (+label), `Login.jsx` (tagline).
+
+**Stok Klien** (`/stok-klien`, `/stok-klien/riwayat`) — akses **Superadmin + Admin/PIC**
+- Hirarki Klien → PO → Item → Mutasi, expand/collapse per PO, CRUD penuh di tiap level
+- Mutasi masuk/keluar dengan guard stok tidak boleh negatif; mutasi ditolak bila item `selesai`
+- Edit/hapus mutasi otomatis merekonsiliasi kuantiti item
+- Cascade delete: hapus klien → PO + item + mutasi ikut terhapus
+- 4 stat card, search klien/No PO (auto-expand hasil), filter status item
+- Riwayat mutasi: filter klien/PO/jenis/rentang tanggal, pagination, edit & hapus
+- Export PDF `kind=stok` dan `kind=riwayat` (pdf-lib, reuse `src/server/pdf/core.js`)
+
+**Jatuh Tempo Klien** (`/tempo`, `/tempo/laporan`) — akses **Superadmin only**
+(sekaligus memenuhi permintaan "nominal Rupiah disembunyikan untuk Admin/PIC")
+- Invoice + TOP dinamis (Cash/Net 30/60/90/Cicilan, bisa tambah/rename/hapus; `Cicilan` terkunci)
+- Rename opsi TOP otomatis meng-update semua invoice yang memakai opsi lama
+- Cicilan bertahap; status **auto Lunas** saat akumulasi cicilan ≥ total tagihan
+- `paid_amount` & `remaining_amount` dihitung server-side
+- Baris tabel diberi tint merah (lewat tempo) / kuning (≤7 hari) + badge "Lewat N hari"
+- Chip filter tempo (Semua / Lewat Tempo / ≤3 hari / ≤7 hari), sort 5 kolom, search, pagination
+- Kartu responsif untuk mobile, dialog detail dengan progress bar pembayaran
+- "Hapus Semua" **wajib** unduh backup PDF dulu — tombol hapus disabled sampai backup dilakukan
+- Laporan: 4 stat card, 3 panel breakdown per klien (collapsible), grafik omset vs pembayaran
+  per bulan (Recharts), filter rentang tanggal, export PDF
+
+**Data contoh:** `node scripts/seed_klien_tempo.mjs [--wipe]` → 5 klien, 6 PO, 10 item,
+20 mutasi, 8 invoice (mencakup skenario lewat tempo, mendekati tempo, lunas, dan cicilan).
+
+**Hasil test (iteration_6.json):** backend 48/51 (0 bug aplikasi — 3 "kegagalan" hanyalah
+ekspektasi 200 vs 201 pada POST), frontend Superadmin lengkap. Verifikasi manual tambahan:
+- Admin/PIC: sidebar tampil section "Stok Klien", **tanpa** "Jatuh Tempo Klien" & "Kalkulator HPP"
+- Admin/PIC akses langsung `/tempo` → redirect ke `/stok`; `/api/tempo/**` → 403
+- REGRESI 0: `/api/dashboard`, `/api/paper/mutations`, `/api/reports/stock`, `/api/po/dashboard`,
+  `/api/po/pos`, `/api/hpp/calculations` semua 200; dashboard Stok SCA tetap 1.940 Rim / 284 Kg
+- Dark mode 2 tool baru bersih (semua warna pakai design token, bukan hex hardcoded)
+
+### Fase I — Setup preview Emergent untuk repo Next.js (SELESAI)
+- Repo ditempatkan di root `/app`; `/app/frontend/package.json` = shim (`cd .. && yarn start`)
+  supaya supervisor `frontend` menjalankan `next dev` di port 3000
+- `/app/backend/server.py` = reverse proxy FastAPI 8001 → Next.js 3000 khusus `/api/*`
+  (ingress preview mengarahkan `/api/*` ke 8001). Di Vercel proxy ini tidak dipakai
+- `next.config.js`: `allowedDevOrigins` untuk domain preview + `outputFileTracingRoot`
+
 ### Sisa pekerjaan / catatan
 - [ ] Token Cloudflare R2 masih **READ-only** → upload foto bukti tahap PO belum bisa dipakai.
       Perlu regenerate dengan permission **Object Read & Write**
